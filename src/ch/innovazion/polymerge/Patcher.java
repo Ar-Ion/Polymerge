@@ -8,10 +8,10 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 
-import ch.innovazion.transforms.AppendTransform;
-import ch.innovazion.transforms.MergeTransform;
-import ch.innovazion.transforms.ReplaceTransform;
-import ch.innovazion.transforms.SourceTransform;
+import ch.innovazion.polymerge.transforms.AppendTransform;
+import ch.innovazion.polymerge.transforms.MergeTransform;
+import ch.innovazion.polymerge.transforms.ReplaceTransform;
+import ch.innovazion.polymerge.transforms.SourceTransform;
 
 public class Patcher {
 	private final String target;
