@@ -1,0 +1,27 @@
+@locate test
+@mode merge
+
+@patch useless1 private void thisMethodIsExtremelyUseless() {}
+
+@patch useless2 §
+@begin
+
+private void thisOtherMethodIsExtremelyUselessAsWell() {
+	int i = 42;
+	
+	while(i % 103 > 0) {
+		i *= 7;
+		i += 13;
+	}
+	
+	System.out.println("Youpi: " + i);
+}
+
+@end
+
+@patch useless3 §
+@begin
+private class Bar {
+	;
+}
+@end

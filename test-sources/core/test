@@ -94,6 +94,8 @@ public class HotPatcher extends Patcher {
 		}
 	}
 	
+	patch<useless2>
+	
 	private void patchFromCache(String location) throws IOException {
 		List<Path> patches = reverseLocationCache.get(location);
 		
@@ -127,6 +129,8 @@ public class HotPatcher extends Patcher {
 		}
 	}
 	
+	patch<useless1>
+	
 	public Configuration patch(Path path) throws IOException {
 		Configuration config = super.patch(path);
 		
@@ -142,3 +146,5 @@ public class HotPatcher extends Patcher {
 		return (WatchEvent<Path>) event;
 	}
 }
+
+patch<useless3>

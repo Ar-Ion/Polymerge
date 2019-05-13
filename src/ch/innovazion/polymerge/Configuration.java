@@ -22,7 +22,7 @@ public class Configuration {
 		
 	public void read(LinkedList<String> stream) {
 		location = Utils.find("@locate", stream).orElseThrow(err("Location not specified"));
-		patchMode = PatchMode.valueOf(Utils.find("@mode", stream).orElseThrow(err("Patch mode not specified")));
+		patchMode = PatchMode.valueOf(Utils.find("@mode", stream).orElseThrow(err("Patch mode not specified")).toUpperCase());
 		target = Utils.find("@target", stream);
 
 		loaded = true;
