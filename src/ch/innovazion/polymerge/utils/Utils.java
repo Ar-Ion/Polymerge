@@ -1,4 +1,4 @@
-package ch.innovazion.polymerge;
+package ch.innovazion.polymerge.utils;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Optional;
 
 public class Utils {
-	
 	/*
 	 * Finds the first element in a stream which starts with a given string.
 	 * Returns the corresponding line (if any), trimmed, and without the given string at the beginning.
@@ -43,7 +42,7 @@ public class Utils {
 		List<String> paragraph = new ArrayList<>();
 		
 		for(int i = 0; i < list.size(); i++) {
-			String element = list.get(i);
+			String element = list.get(i).trim();
 			
 			if(element.startsWith("@end")) {
 				for(int j = 0; j < i + 1; j++) {

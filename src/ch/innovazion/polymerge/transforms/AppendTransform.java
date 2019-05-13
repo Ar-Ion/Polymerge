@@ -1,16 +1,17 @@
 package ch.innovazion.polymerge.transforms;
 
-import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 
 public class AppendTransform extends RawTransform {
-	public AppendTransform(File root) {
+	public AppendTransform(Path root) {
 		super(root);
 	}
 
-	protected PrintWriter getWriter(File target) throws IOException {
-		return new PrintWriter(new FileWriter(target, true));
+	protected PrintWriter getWriter(Path target) throws IOException {
+		return new PrintWriter(Files.newBufferedWriter(target, StandardOpenOption.APPEND));
 	}
 }

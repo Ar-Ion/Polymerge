@@ -1,22 +1,23 @@
 package ch.innovazion.polymerge.transforms;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.LinkedList;
 
 public abstract class SourceTransform {
 	
-	private final File root;
+	private final Path root;
 	
-	public SourceTransform(File root) {
+	public SourceTransform(Path root) {
 		this.root = root;
 	}
 	
-	protected File resolveIdentifier(String identifier) throws IOException {
-		File resolved = new File(root, identifier.replace(".", File.separator));
+	protected Path resolveIdentifier(String identifier) throws IOException {
+		Path resolved = root.resolve(identifier);
 		
-		resolved.getParentFile().mkdirs();
-		resolved.createNewFile();
+		Files.createDirectories(resolved.getParent());
+		Files.createFile(resolved);
 		
 		return resolved;
 	}

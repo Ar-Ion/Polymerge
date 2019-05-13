@@ -4,6 +4,8 @@ import java.util.LinkedList;
 import java.util.Optional;
 import java.util.function.Supplier;
 
+import ch.innovazion.polymerge.utils.Utils;
+
 public class Configuration {
 	
 	private final String name;

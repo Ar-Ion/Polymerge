@@ -1,84 +1,69 @@
 package ch.innovazion.polymerge;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.ArrayList;
+import java.nio.file.Path;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Optional;
 
 import ch.innovazion.polymerge.transforms.AppendTransform;
 import ch.innovazion.polymerge.transforms.MergeTransform;
 import ch.innovazion.polymerge.transforms.ReplaceTransform;
 import ch.innovazion.polymerge.transforms.SourceTransform;
+import ch.innovazion.polymerge.utils.IOConsumer;
 
 public class Patcher {
 	private final String target;
-	private final File core;
-	private final File version;
-	private final File output;
+	private final Path core;
+	private final Path patches;
+	private final Path output;
 	
-	public Patcher(String target, File core, File version, File output) {
+	public Patcher(String target, Path core, Path patches, Path output) {
 		this.target = target;
 		this.core = core;
-		this.version = version;
+		this.patches = patches;
 		this.output = output;
 	}
-	
-	public void patch() {
-		try {
-			install();
-			patchAll(version, new ArrayList<>());
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+		
+	public void patch() throws IOException {
+		install();
+		patchAll(patches);
 	}
 	
-	
 	/*
-	 * Installs the core source into the output.
+	 * Installs the core code base into the output.
 	 */
 	private void install() throws IOException {
-		output.delete();
-		output.mkdir();
-		
-		File[] sub = core.listFiles();
-		
-		for(File file : sub) {
-			File out = new File(output, file.getName());
-			Files.copy(file.toPath(), out.toPath());
-		}
+		Files.delete(output);
+		Files.createDirectories(output);
+				
+		Files.list(core).forEach(IOConsumer.of(path -> {
+			Files.copy(path, output.resolve(path.getFileName()));
+		}));
 	}
 	
 	
 	/*
 	 * Patches all files in a directory.
 	 */
-	private void patchAll(File dir, List<String> hierarchy) throws IOException {
-		File[] sub = dir.listFiles();
-		
-		for(File file : sub) {
-			List<String> newParents = new ArrayList<>(hierarchy);
-			
-			newParents.add(file.getName());
-			
-			if(file.isDirectory()) {
-				patchAll(file, hierarchy);
-			} else if(file.isFile()) {
-				patch(file, hierarchy);
+	private void patchAll(Path dir) throws IOException {
+		Files.list(dir).forEach(IOConsumer.of(path -> {			
+			if(Files.isDirectory(path)) {
+				patchAll(path);
+			} else if(Files.isRegularFile(path)) {
+				patch(path);
 			} else {
 				throw new UnsupportedOperationException();
 			}
-		}
+		}));
 	}
 	
 	/*
 	 * Patches a specific file.
 	 */
-	private void patch(File file, List<String> hierarchy) throws IOException {
-		LinkedList<String> lines = new LinkedList<String>(Files.readAllLines(file.toPath()));
-		Configuration config = new Configuration(String.join(".", hierarchy));
+	protected Configuration patch(Path file) throws IOException {
+		LinkedList<String> lines = new LinkedList<String>(Files.readAllLines(file));
+		Configuration config = new Configuration(patches.relativize(file).toString());
 		
 		config.read(lines);
 		
@@ -101,6 +86,8 @@ public class Patcher {
 					
 			transform.apply(config.getLocation(), lines);
 		}
+		
+		return config;
 	}
 	
 	/*
@@ -115,5 +102,21 @@ public class Patcher {
 		} else {
 			return true;
 		}
+	}
+	
+	public String getTargetName() {
+		return target;
+	}
+	
+	protected Path getCore() {
+		return core;
+	}
+	
+	protected Path getPatches() {
+		return patches;
+	}
+	
+	protected Path getOutput() {
+		return output;
 	}
 }

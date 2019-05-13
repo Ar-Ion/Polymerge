@@ -1,8 +1,8 @@
 package ch.innovazion.polymerge.transforms;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -12,24 +12,35 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import ch.innovazion.polymerge.Utils;
+import ch.innovazion.polymerge.utils.Utils;
 
 public class MergeTransform extends SourceTransform {
 		
-	public MergeTransform(File root) {
+	public MergeTransform(Path root) {
 		super(root);
 	}
 
+	/*
+	 * Every time an entry from symbol map is found in the core code base, it gets replaced by its corresponding patch.
+	 */
 	public void apply(String identifier, LinkedList<String> patchData) throws IOException {
-		File target = resolveIdentifier(identifier);
+		Path target = resolveIdentifier(identifier);
 		Map<String, String> symbols = scanSymbols(patchData);
 		
-		List<String> lines = Files.readAllLines(target.toPath());
+		List<String> lines = Files.readAllLines(target);
 		List<String> patched = lines.stream().map(line -> patchLine(line, symbols)).collect(Collectors.toList());
 	
-		Files.write(target.toPath(), patched, StandardOpenOption.TRUNCATE_EXISTING);
+		Files.write(target, patched, StandardOpenOption.TRUNCATE_EXISTING);
 	}
 	
+	/*
+	 * Scans the patch file for required replacements and stores them in a hash map after parsing.
+	 * 
+	 * If an instruction such as "@patch key value" is found, a replacement "patch<key>" -> "value" is created.
+	 * If an instruction such as "@patch key §" is found, the "Utils" class will attempt to read a paragraph and use it as a replacement for "patch<key>".
+	 * 
+	 * A paragraph must always be enclosed by "@begin" and "@end" and for each of those, an entire line must be dedicated.
+	 */
 	private Map<String, String> scanSymbols(LinkedList<String> patchData) throws TransformException {
 		Map<String, String> symbols = new HashMap<>();
 		
@@ -40,7 +51,7 @@ public class MergeTransform extends SourceTransform {
 				String[] instruction = element.get().split(" ");
 				
 				if(instruction.length > 1) {
-					String key = "@patchme<" + instruction[0] + ">";
+					String key = "patch<" + instruction[0] + ">";
 					String value = instruction[instruction.length - 1];
 					
 					if(value.trim().equals("§")) {

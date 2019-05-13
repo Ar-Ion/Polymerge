@@ -1,13 +1,13 @@
 package ch.innovazion.polymerge.transforms;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.file.Path;
 import java.util.LinkedList;
 
 public abstract class RawTransform extends SourceTransform {
 
-	public RawTransform(File root) {
+	public RawTransform(Path root) {
 		super(root);
 	}
 		
@@ -24,5 +24,5 @@ public abstract class RawTransform extends SourceTransform {
 		}
 	}
 	
-	protected abstract PrintWriter getWriter(File target) throws IOException;
+	protected abstract PrintWriter getWriter(Path target) throws IOException;
 }
