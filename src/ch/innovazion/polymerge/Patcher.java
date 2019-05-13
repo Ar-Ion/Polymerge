@@ -42,12 +42,19 @@ public class Patcher {
 		}));
 	}
 	
+	private int priorityForSubfolders(Path a, Path b) {
+		if(Files.isDirectory(a) == Files.isDirectory(b)) {
+			return a.compareTo(b);
+		} else {
+			return Files.isDirectory(a) ? -1 : 1;
+		}
+	}
 	
 	/*
 	 * Patches all files in a directory.
 	 */
 	private void patchAll(Path dir) throws IOException {
-		Files.list(dir).forEach(IOConsumer.of(path -> {			
+		Files.list(dir).sorted(this::priorityForSubfolders).forEachOrdered(IOConsumer.of(path -> {			
 			if(Files.isDirectory(path)) {
 				patchAll(path);
 			} else if(Files.isRegularFile(path)) {
