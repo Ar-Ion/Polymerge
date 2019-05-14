@@ -22,6 +22,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.sun.nio.file.SensitivityWatchEventModifier;
+
 import ch.innovazion.polymerge.utils.IOConsumer;
 
 public class HotPatcher extends Patcher {
@@ -74,7 +76,7 @@ public class HotPatcher extends Patcher {
 	private void registerRecursiveWatchService(Path root, WatchService service, Kind<?>... events) throws IOException {
 		Files.walkFileTree(root, new SimpleFileVisitor<Path>() {
 	        public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-	            dir.register(service, events);
+	            dir.register(service, events, SensitivityWatchEventModifier.HIGH);
 	            return FileVisitResult.CONTINUE;
 	        }
 	    });
