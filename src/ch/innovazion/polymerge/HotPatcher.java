@@ -116,6 +116,7 @@ public class HotPatcher extends Patcher {
 				
 				if(location != null) {
 					Files.copy(getCore().resolve(location), getOutput().resolve(location), StandardCopyOption.REPLACE_EXISTING);
+					patchFromCache(location);
 				}
 			}
 			
