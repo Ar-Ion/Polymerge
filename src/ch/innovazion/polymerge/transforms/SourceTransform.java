@@ -39,8 +39,11 @@ public abstract class SourceTransform {
 	
 	protected Path resolveIdentifier(String identifier) throws IOException {
 		Path resolved = root.resolve(identifier);
+		Path parent = resolved.getParent();
 		
-		Files.createDirectories(resolved.getParent());
+		if(parent != null) {
+			Files.createDirectories(parent);
+		}
 		
 		if(!Files.exists(resolved)) {
 			Files.createFile(resolved);
