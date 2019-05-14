@@ -4,7 +4,7 @@ import java.util.LinkedList;
 import java.util.Optional;
 import java.util.function.Supplier;
 
-import ch.innovazion.polymerge.utils.Utils;
+import ch.innovazion.polymerge.utils.PatchUtils;
 
 public class Configuration {
 	
@@ -21,9 +21,9 @@ public class Configuration {
 	}
 		
 	public void read(LinkedList<String> stream) {
-		location = Utils.find("@locate", stream).orElseThrow(err("Location not specified"));
-		patchMode = PatchMode.valueOf(Utils.find("@mode", stream).orElseThrow(err("Patch mode not specified")).toUpperCase());
-		target = Utils.find("@target", stream);
+		location = PatchUtils.find("@locate", stream).orElseThrow(err("Location not specified"));
+		patchMode = PatchMode.valueOf(PatchUtils.find("@mode", stream).orElseThrow(err("Patch mode not specified")).toUpperCase());
+		target = PatchUtils.find("@target", stream);
 
 		loaded = true;
 	}

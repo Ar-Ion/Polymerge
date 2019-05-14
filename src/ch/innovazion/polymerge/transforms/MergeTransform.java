@@ -12,7 +12,7 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import ch.innovazion.polymerge.utils.Utils;
+import ch.innovazion.polymerge.utils.PatchUtils;
 
 public class MergeTransform extends SourceTransform {
 		
@@ -45,7 +45,7 @@ public class MergeTransform extends SourceTransform {
 		Map<String, String> symbols = new HashMap<>();
 		
 		while(true) {
-			Optional<String> element = Utils.find("@patch", patchData);
+			Optional<String> element = PatchUtils.find("@patch", patchData);
 			
 			if(element.isPresent()) {
 				String[] instruction = element.get().split(" ");
@@ -55,7 +55,7 @@ public class MergeTransform extends SourceTransform {
 					String value = instruction[instruction.length - 1];
 					
 					if(value.trim().equals("§")) {
-						List<String> paragraph = Utils.readParagraph(patchData).orElseThrow(() -> new TransformException("Paragraph is not correctly delimited."));
+						List<String> paragraph = PatchUtils.readParagraph(patchData).orElseThrow(() -> new TransformException("Paragraph is not correctly delimited."));
 						symbols.put(key, String.join(System.lineSeparator(), paragraph));
 					} else {
 						symbols.put(key, value);

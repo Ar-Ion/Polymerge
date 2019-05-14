@@ -3,6 +3,7 @@ package ch.innovazion.polymerge;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.Optional;
 
@@ -11,6 +12,7 @@ import ch.innovazion.polymerge.transforms.MergeTransform;
 import ch.innovazion.polymerge.transforms.ReplaceTransform;
 import ch.innovazion.polymerge.transforms.SourceTransform;
 import ch.innovazion.polymerge.utils.IOConsumer;
+import ch.innovazion.polymerge.utils.IOUtils;
 
 public class Patcher {
 	private final String target;
@@ -34,35 +36,23 @@ public class Patcher {
 	 * Installs the core code base into the output.
 	 */
 	private void install() throws IOException {
-		Files.delete(output);
-		Files.createDirectories(output);
-				
-		Files.list(core).forEach(IOConsumer.of(path -> {
-			Files.copy(path, output.resolve(path.getFileName()));
-		}));
-	}
-	
-	private int priorityForSubfolders(Path a, Path b) {
-		if(Files.isDirectory(a) == Files.isDirectory(b)) {
-			return a.compareTo(b);
-		} else {
-			return Files.isDirectory(a) ? -1 : 1;
-		}
+		IOUtils.deleteDirectory(output);
+		IOUtils.copyDirectory(core, output);
 	}
 	
 	/*
 	 * Patches all files in a directory.
+	 * Priority for the most nested patches.
 	 */
 	private void patchAll(Path dir) throws IOException {
-		Files.list(dir).sorted(this::priorityForSubfolders).forEachOrdered(IOConsumer.of(path -> {			
-			if(Files.isDirectory(path)) {
-				patchAll(path);
-			} else if(Files.isRegularFile(path)) {
-				patch(path);
-			} else {
-				throw new UnsupportedOperationException();
-			}
-		}));
+	FileVisitor<Path> visitor = new SimpleFileVisitor<>() {
+	public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+    patch(file);
+    return FileVisitResult.CONTINUE;
+    }
+	};
+	
+	Files.walkFileTree(dir, visitor);
 	}
 	
 	/*
