@@ -98,9 +98,7 @@ public class HotPatcher extends Patcher {
 		List<Path> patches = reverseLocationCache.get(location);
 		
 		if(patches != null) {
-			for(Path path : patches) {
-				patch(path);
-			}
+		patches.forEach(super::patch);
 		}
 	}
 	
