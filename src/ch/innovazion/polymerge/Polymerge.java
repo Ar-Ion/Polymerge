@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-public class PolyMerge {
+public class Polymerge {
 	
 	private final Path sources;
 	private final Path patched;
@@ -12,7 +12,7 @@ public class PolyMerge {
 	
 	private final String target;
 	
-	public PolyMerge(Path sources, Path patched, String target) {
+	public Polymerge(Path sources, Path patched, String target) {
 		this.sources = sources;
 		this.patched = patched;
 		this.core = sources.resolve("core");
