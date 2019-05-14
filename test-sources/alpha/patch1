@@ -2,9 +2,9 @@
 @mode merge
 @target alpha.v2
 
-@patch useless1 private void thisMethodIsUseless() {}
+@patch useless1 --- private void thisMethodIsUseless() {}
 
-@patch useless2 §
+@patch useless2 --- 	 --- § --- /* This comment is appended */
 @begin
 
 private void thisOtherMethodIsUselessAsWell() {
@@ -20,7 +20,7 @@ private void thisOtherMethodIsUselessAsWell() {
 
 @end
 
-@patch useless3 §
+@patch useless3 --- §
 @begin
 private class Foo {
 	;

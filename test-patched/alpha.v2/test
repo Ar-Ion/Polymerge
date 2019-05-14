@@ -96,7 +96,18 @@ public class HotPatcher extends Patcher {
 		}
 	}
 	
-	patch<useless2>
+		/* This comment is appended */
+	private void thisOtherMethodIsUselessAsWell() {/* This comment is appended */
+		int i = 42;/* This comment is appended */
+		/* This comment is appended */
+		while(i % 103 > 0) {/* This comment is appended */
+			i *= 7;/* This comment is appended */
+			i += 13;/* This comment is appended */
+		}/* This comment is appended */
+		/* This comment is appended */
+		System.out.println("Youpi: " + i);/* This comment is appended */
+	}/* This comment is appended */
+	
 	
 	private void patchFromCache(String location) throws IOException {
 		List<Path> patches = reverseLocationCache.get(location);
@@ -131,7 +142,7 @@ public class HotPatcher extends Patcher {
 		}
 	}
 	
-	patch<useless1>
+	private void thisMethodIsUseless() {}
 	
 	public Configuration patch(Path path) throws IOException {
 		Configuration config = super.patch(path);
@@ -149,4 +160,12 @@ public class HotPatcher extends Patcher {
 	}
 }
 
-patch<useless3>
+private class Foo {
+	;
+}
+
+/*
+ 
+ 	Those five lines are useless but I love them.
+ 
+*/

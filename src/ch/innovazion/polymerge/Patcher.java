@@ -38,7 +38,10 @@ public class Patcher {
 	 * Installs the core code base into the output.
 	 */
 	private void install() throws IOException {
-		IOUtils.deleteDirectory(output);
+		if(Files.exists(output)) {
+			IOUtils.deleteDirectory(output);
+		}
+		
 		IOUtils.copyDirectory(core, output);
 	}
 	

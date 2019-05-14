@@ -1,9 +1,9 @@
 @locate test
 @mode merge
 
-@patch useless1 private void thisMethodIsExtremelyUseless() {}
+@patch useless1 --- private void thisMethodIsExtremelyUseless() {}
 
-@patch useless2 §
+@patch useless2 --- 	 --- §
 @begin
 
 private void thisOtherMethodIsExtremelyUselessAsWell() {
@@ -19,7 +19,7 @@ private void thisOtherMethodIsExtremelyUselessAsWell() {
 
 @end
 
-@patch useless3 §
+@patch useless3 --- §
 @begin
 private class Bar {
 	;

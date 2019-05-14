@@ -1,6 +1,3 @@
-@locate sub/test
-@mode replace
-@target alpha
 
 useless alpha
 useless alpha

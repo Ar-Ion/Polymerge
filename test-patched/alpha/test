@@ -150,3 +150,9 @@ public class HotPatcher extends Patcher {
 }
 
 patch<useless3>
+
+/*
+ 
+ 	Those five lines are useless but I love them.
+ 
+*/

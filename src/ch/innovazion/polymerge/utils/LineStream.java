@@ -19,7 +19,7 @@ public class LineStream implements Iterator<String>, Iterable<String> {
 	}
 	
 	public String next() {
-		return lines.get(position++).trim();
+		return lines.get(position++);
 	}
 	
 	public void mark() {
@@ -28,6 +28,10 @@ public class LineStream implements Iterator<String>, Iterable<String> {
 	
 	public void reset() {
 		position = mark;
+	}
+	
+	public int getLineNumber() {
+		return position + 1;
 	}
 
 	public Iterator<String> iterator() {

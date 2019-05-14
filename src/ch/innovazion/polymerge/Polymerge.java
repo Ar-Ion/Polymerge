@@ -24,15 +24,22 @@ public class Polymerge {
 		try {
 			Files.createDirectories(sources);
 			Files.createDirectories(patched);
-			Files.createDirectory(core);
+			Files.createDirectories(core);
 		} catch (IOException e) {
 			System.err.println("Failed to create root directories.");
 			return;
 		}
 			
-		System.out.println("Starting HotPatcher for target " + target + "...");
+		System.out.println("Starting HotPatcher for target '" + target + "'...");
 		
-		Path patches = sources.resolve(target.split(".")[0]);
+		String[] splitted = target.split("\\.");
+		String main = target;
+		
+		if(splitted.length > 0) {
+			main = splitted[0];
+		}
+		
+		Path patches = sources.resolve(main);
 		Path output = patched.resolve(target);
 		
 		if(Files.exists(patches) && Files.isDirectory(patches)) {
@@ -43,7 +50,7 @@ public class Polymerge {
 				System.out.println("Patcher terminated normally.");
 			} catch (IOException e) {
 				e.printStackTrace();
-				System.err.println("Patcher terminated with fatal failure.");
+				System.err.println("Patcher terminated with failure.");
 			}
 			
 		} else {

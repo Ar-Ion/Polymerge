@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -48,20 +49,39 @@ public class MergeTransform extends SourceTransform {
 			Optional<String> element = PatchUtils.find("@patch", stream);
 			
 			if(element.isPresent()) {
-				String[] instruction = element.get().split(" ");
+				String[] instruction = element.get().split(" --- ");
 				
 				if(instruction.length > 1) {
 					String key = "patch<" + instruction[0] + ">";
-					String value = instruction[instruction.length - 1];
+					
+					String prepend = new String();
+					String value = new String();
+					String append = new String();
+					
+					int length = instruction.length;
+					
+					if(length > 3) {
+						prepend = instruction[1];
+						value = String.join(" --- ", Arrays.copyOfRange(instruction, 2, length - 1));
+						append = instruction[length - 1];
+					} else if(length == 3) {
+						prepend = instruction[1];
+						value = instruction[2];
+					} else if(length == 2) {
+						value = instruction[1];
+					}
 					
 					if(value.trim().equals("§")) {
 						List<String> paragraph = PatchUtils.readParagraph(stream).orElseThrow(() -> new TransformException("Paragraph is not correctly delimited."));
-						symbols.put(key, String.join(System.lineSeparator(), paragraph));
+						
+						paragraph = paragraph.stream().map(prepend::concat).collect(Collectors.toList());
+
+						symbols.put(key, String.join(append + System.lineSeparator(), paragraph));
 					} else {
 						symbols.put(key, value);
 					}
 				} else {
-					throw new TransformException("Invalid command. Syntax: @patch key value");
+					throw new TransformException("Invalid command at line " + stream.getLineNumber() + ". Syntax: @patch key ::< prepend ::> value <:: append >");
 				}
 			} else {
 				break;
@@ -71,11 +91,11 @@ public class MergeTransform extends SourceTransform {
 		return symbols;
 	}
 	
-	private String patchLine(String input, Map<String, String> symbols) {		
+	private String patchLine(String line, Map<String, String> symbols) {		
 		for(Entry<String, String> symbol : symbols.entrySet()) {
-			input = input.replace(symbol.getKey(), symbol.getValue());
+			line = line.replace(symbol.getKey(), symbol.getValue());
 		}
 		
-		return input;
+		return line;
 	}
 }

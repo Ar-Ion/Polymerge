@@ -18,7 +18,10 @@ public abstract class SourceTransform {
 		Path resolved = root.resolve(identifier);
 		
 		Files.createDirectories(resolved.getParent());
-		Files.createFile(resolved);
+		
+		if(!Files.exists(resolved)) {
+			Files.createFile(resolved);
+		}
 		
 		return resolved;
 	}

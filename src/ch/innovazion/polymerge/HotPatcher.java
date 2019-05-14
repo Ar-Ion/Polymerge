@@ -36,7 +36,7 @@ public class HotPatcher extends Patcher {
 	public void patch() throws IOException {
 		super.patch();
 		
-		System.out.println("Starting watch service...");
+		System.out.println("[" + getTargetName() + "] Starting watch service...");
 		
 		WatchService coreService = FileSystems.getDefault().newWatchService();
 		WatchService patchesService = FileSystems.getDefault().newWatchService();
@@ -50,16 +50,21 @@ public class HotPatcher extends Patcher {
 				WatchKey patchesKey = patchesService.poll();
 
 				if(coreKey != null) {
-					coreKey.pollEvents().stream().map(this::cast).forEach(this::handleCoreChange);
+					coreKey.pollEvents().stream().map(this::cast).forEach((event) -> {
+						handleCoreChange((Path) coreKey.watchable(), event);
+					});
+					
 					coreKey.reset();
 				}
 				
 				if(patchesKey != null) {
-					patchesKey.pollEvents().stream().map(this::cast).forEach(this::handlePatchesChange);
+					patchesKey.pollEvents().stream().map(this::cast).forEach((event) -> {
+						handlePatchesChange((Path) patchesKey.watchable(), event);
+					});
 					patchesKey.reset();
 				}
-								
-				Thread.sleep(500);
+												
+				Thread.sleep(100);
 			} catch (InterruptedException e) {
 				;
 			}
@@ -75,18 +80,19 @@ public class HotPatcher extends Patcher {
 	    });
 	}
 	
-	private void handleCoreChange(WatchEvent<Path> event) {
-		Path modified = event.context();
+	private void handleCoreChange(Path source, WatchEvent<Path> event) {
+		Path modified = source.resolve(event.context());
+		Path relative = getCore().relativize(modified);
+		
 		Kind<Path> kind = event.kind();
 		
 		try {
-			System.out.println("Watchservice (Core) [" + kind + "]: " + modified);
+			System.out.println("[" + getTargetName() + "] Watchservice (Core) [" + kind + "]: " + relative);
 			
-			Path relative = getCore().relativize(modified);
 			Path target = getOutput().resolve(relative);
 			
 			if(kind == ENTRY_CREATE || kind == ENTRY_MODIFY) {
-				Files.copy(modified, target);
+				Files.copy(modified, target, StandardCopyOption.REPLACE_EXISTING);
 				patchFromCache(relative.toString());
 			} else if(kind == ENTRY_DELETE) {
 				Files.deleteIfExists(target);
@@ -104,18 +110,22 @@ public class HotPatcher extends Patcher {
 		}
 	}
 	
-	private void handlePatchesChange(WatchEvent<Path> event) {
-		Path modified = event.context();
+	private void handlePatchesChange(Path source, WatchEvent<Path> event) {
+		Path modified = source.resolve(event.context());
+		Path relative = getPatches().relativize(modified);
 		Kind<Path> kind = event.kind();
 		
 		try {
-			System.out.println("Watchservice (Patches) [" + kind + "]: " + modified);
-			
+			System.out.println("[" + getTargetName() + "] Watchservice (Patches) [" + kind + "]: " + relative);
+						
 			if(kind == ENTRY_DELETE || kind == ENTRY_MODIFY) {
 				String location = locationCache.remove(modified);
 				
 				if(location != null) {
+					reverseLocationCache.get(location).remove(modified);
+					
 					Files.copy(getCore().resolve(location), getOutput().resolve(location), StandardCopyOption.REPLACE_EXISTING);
+					
 					patchFromCache(location);
 				}
 			}

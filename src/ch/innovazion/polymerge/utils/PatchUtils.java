@@ -14,8 +14,10 @@ public class PatchUtils {
 		stream.mark();
 		
 		for(String line : stream) {
-			if(line.startsWith(start)) {
-				return Optional.of(line.substring(start.length()).trim());
+			String trim = line.trim();
+			
+			if(trim.startsWith(start)) {
+				return Optional.of(trim.substring(start.length()).trim());
 			}
 		}
 
@@ -36,8 +38,10 @@ public class PatchUtils {
 			
 			stream.mark();
 			
-			for(String line : stream) {				
-				if(line.startsWith("@end")) {
+			for(String line : stream) {
+				String trim = line.trim();
+
+				if(trim.startsWith("@end")) {
 					return Optional.of(paragraph);
 				} else {
 					paragraph.add(line);
