@@ -1,6 +1,6 @@
 package ch.innovazion.polymerge;
 
-// Hi there :-) I just got updated!!!
+// Hi there :-) 
 
 import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
 import static java.nio.file.StandardWatchEventKinds.ENTRY_DELETE;

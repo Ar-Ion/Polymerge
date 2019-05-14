@@ -1,6 +1,27 @@
+/*******************************************************************************
+ * MIT License
+ *
+ * Copyright (c) 2019 Innovazion
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ *******************************************************************************/
 package ch.innovazion.polymerge;
-
-// Hi there :-) I just got updated!!!
 
 import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
 import static java.nio.file.StandardWatchEventKinds.ENTRY_DELETE;
@@ -24,6 +45,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.sun.nio.file.SensitivityWatchEventModifier;
+
+import ch.innovazion.polymerge.utils.IOConsumer;
+
 public class HotPatcher extends Patcher {
 	
 	private final Map<Path, String> locationCache = new HashMap<>();
@@ -36,7 +61,7 @@ public class HotPatcher extends Patcher {
 	public void patch() throws IOException {
 		super.patch();
 		
-		System.out.println("Starting watch service...");
+		System.out.println("[" + getTargetName() + "] Starting watch service...");
 		
 		WatchService coreService = FileSystems.getDefault().newWatchService();
 		WatchService patchesService = FileSystems.getDefault().newWatchService();
@@ -50,16 +75,21 @@ public class HotPatcher extends Patcher {
 				WatchKey patchesKey = patchesService.poll();
 
 				if(coreKey != null) {
-					coreKey.pollEvents().stream().map(this::cast).forEach(this::handleCoreChange);
+					coreKey.pollEvents().stream().map(this::cast).forEach((event) -> {
+						handleCoreChange((Path) coreKey.watchable(), event);
+					});
+					
 					coreKey.reset();
 				}
 				
 				if(patchesKey != null) {
-					patchesKey.pollEvents().stream().map(this::cast).forEach(this::handlePatchesChange);
+					patchesKey.pollEvents().stream().map(this::cast).forEach((event) -> {
+						handlePatchesChange((Path) patchesKey.watchable(), event);
+					});
 					patchesKey.reset();
 				}
-								
-				Thread.sleep(500);
+												
+				Thread.sleep(100);
 			} catch (InterruptedException e) {
 				;
 			}
@@ -69,24 +99,25 @@ public class HotPatcher extends Patcher {
 	private void registerRecursiveWatchService(Path root, WatchService service, Kind<?>... events) throws IOException {
 		Files.walkFileTree(root, new SimpleFileVisitor<Path>() {
 	        public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-	            dir.register(service, events);
+	            dir.register(service, events, SensitivityWatchEventModifier.HIGH);
 	            return FileVisitResult.CONTINUE;
 	        }
 	    });
 	}
 	
-	private void handleCoreChange(WatchEvent<Path> event) {
-		Path modified = event.context();
+	private void handleCoreChange(Path source, WatchEvent<Path> event) {
+		Path modified = source.resolve(event.context());
+		Path relative = getCore().relativize(modified);
+		
 		Kind<Path> kind = event.kind();
 		
 		try {
-			System.out.println("Watchservice (Core) [" + kind + "]: " + modified);
+			System.out.println("[" + getTargetName() + "] Watchservice (Core) [" + kind + "]: " + relative);
 			
-			Path relative = getCore().relativize(modified);
 			Path target = getOutput().resolve(relative);
 			
 			if(kind == ENTRY_CREATE || kind == ENTRY_MODIFY) {
-				Files.copy(modified, target);
+				Files.copy(modified, target, StandardCopyOption.REPLACE_EXISTING);
 				patchFromCache(relative.toString());
 			} else if(kind == ENTRY_DELETE) {
 				Files.deleteIfExists(target);
@@ -96,30 +127,33 @@ public class HotPatcher extends Patcher {
 		}
 	}
 	
-	patch<useless2>
-	
 	private void patchFromCache(String location) throws IOException {
 		List<Path> patches = reverseLocationCache.get(location);
 		
 		if(patches != null) {
-			for(Path path : patches) {
-				patch(path);
-			}
+			patches.forEach(IOConsumer.of(super::patch));
 		}
 	}
 	
-	private void handlePatchesChange(WatchEvent<Path> event) {
-		Path modified = event.context();
+	patch<useless2>
+	
+	private void handlePatchesChange(Path source, WatchEvent<Path> event) {
+		Path modified = source.resolve(event.context());
+		Path relative = getPatches().relativize(modified);
 		Kind<Path> kind = event.kind();
 		
 		try {
-			System.out.println("Watchservice (Patches) [" + kind + "]: " + modified);
-			
+			System.out.println("[" + getTargetName() + "] Watchservice (Patches) [" + kind + "]: " + relative);
+						
 			if(kind == ENTRY_DELETE || kind == ENTRY_MODIFY) {
 				String location = locationCache.remove(modified);
 				
 				if(location != null) {
+					reverseLocationCache.get(location).remove(modified);
+					
 					Files.copy(getCore().resolve(location), getOutput().resolve(location), StandardCopyOption.REPLACE_EXISTING);
+					
+					patchFromCache(location);
 				}
 			}
 			
@@ -131,8 +165,6 @@ public class HotPatcher extends Patcher {
 		}
 	}
 	
-	patch<useless1>
-	
 	public Configuration patch(Path path) throws IOException {
 		Configuration config = super.patch(path);
 		
@@ -142,6 +174,7 @@ public class HotPatcher extends Patcher {
 		return config;
 	}
 	
+	patch<useless1>
 	
 	@SuppressWarnings("unchecked")
 	private WatchEvent<Path> cast(WatchEvent<?> event) {
@@ -150,7 +183,6 @@ public class HotPatcher extends Patcher {
 }
 
 patch<useless3>
-
 /*
  
  	Those five lines are useless but I love them.
