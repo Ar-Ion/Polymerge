@@ -1,22 +1,20 @@
 package ch.innovazion.polymerge;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.FileVisitor;
 import java.nio.file.FileVisitResult;
+import java.nio.file.FileVisitor;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
-import java.nio.file.Path;
-import java.util.Comparator;
-import java.util.LinkedList;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Optional;
-import java.util.Queue;
 
 import ch.innovazion.polymerge.transforms.AppendTransform;
 import ch.innovazion.polymerge.transforms.MergeTransform;
 import ch.innovazion.polymerge.transforms.ReplaceTransform;
 import ch.innovazion.polymerge.transforms.SourceTransform;
 import ch.innovazion.polymerge.utils.IOUtils;
+import ch.innovazion.polymerge.utils.LineStream;
 
 public class Patcher {
 	private final String target;
@@ -49,24 +47,24 @@ public class Patcher {
 	 * Priority for the most nested patches.
 	 */
 	private void patchAll(Path dir) throws IOException {
-	FileVisitor<Path> visitor = new SimpleFileVisitor<>() {
-	public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-    patch(file);
-    return FileVisitResult.CONTINUE;
-    }
-	};
-	
-	Files.walkFileTree(dir, visitor);
+		FileVisitor<Path> visitor = new SimpleFileVisitor<Path>() {
+			public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+			    patch(file);
+			    return FileVisitResult.CONTINUE;
+		    }
+		};
+		
+		Files.walkFileTree(dir, visitor);
 	}
 	
 	/*
 	 * Patches a specific file.
 	 */
 	protected Configuration patch(Path file) throws IOException {
-		Queue<String> lines = new LinkedList<String>(Files.readAllLines(file));
+		LineStream stream = new LineStream(Files.readAllLines(file));
 		Configuration config = new Configuration(patches.relativize(file).toString());
 		
-		config.read(lines);
+		config.read(stream);
 		
 		if(shouldPatch(config)) {
 			SourceTransform transform = null;
@@ -85,7 +83,7 @@ public class Patcher {
 					throw new UnsupportedOperationException();
 			}		
 					
-			transform.apply(config.getLocation(), lines);
+			transform.apply(config.getLocation(), stream);
 		}
 		
 		return config;

@@ -2,7 +2,7 @@ package ch.innovazion.polymerge.test;
 
 import java.nio.file.Paths;
 
-import ch.innovazion.polymerge.PolyMerge;
+import ch.innovazion.polymerge.Polymerge;
 
 public class FeatureTests {
 	

@@ -3,7 +3,8 @@ package ch.innovazion.polymerge.transforms;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Queue;
+
+import ch.innovazion.polymerge.utils.LineStream;
 
 public abstract class SourceTransform {
 	
@@ -22,5 +23,5 @@ public abstract class SourceTransform {
 		return resolved;
 	}
 	
-	public abstract void apply(String identifier, Queue<String> patchData) throws IOException;
+	public abstract void apply(String identifier, LineStream stream) throws IOException;
 }

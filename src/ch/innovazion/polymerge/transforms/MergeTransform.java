@@ -5,13 +5,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.HashMap;
-import java.util.Queue;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import ch.innovazion.polymerge.utils.LineStream;
 import ch.innovazion.polymerge.utils.PatchUtils;
 
 public class MergeTransform extends SourceTransform {
@@ -23,9 +23,9 @@ public class MergeTransform extends SourceTransform {
 	/*
 	 * Every time an entry from symbol map is found in the core code base, it gets replaced by its corresponding patch.
 	 */
-	public void apply(String identifier, Queue<String> patchData) throws IOException {
+	public void apply(String identifier, LineStream stream) throws IOException {
 		Path target = resolveIdentifier(identifier);
-		Map<String, String> symbols = scanSymbols(patchData);
+		Map<String, String> symbols = scanSymbols(stream);
 		
 		List<String> lines = Files.readAllLines(target);
 		List<String> patched = lines.stream().map(line -> patchLine(line, symbols)).collect(Collectors.toList());
@@ -41,11 +41,11 @@ public class MergeTransform extends SourceTransform {
 	 * 
 	 * A paragraph must always be enclosed by "@begin" and "@end" and for each of those, an entire line must be dedicated.
 	 */
-	private Map<String, String> scanSymbols(Queue<String> patchData) throws TransformException {
+	private Map<String, String> scanSymbols(LineStream stream) throws TransformException {
 		Map<String, String> symbols = new HashMap<>();
 		
 		while(true) {
-			Optional<String> element = PatchUtils.find("@patch", patchData);
+			Optional<String> element = PatchUtils.find("@patch", stream);
 			
 			if(element.isPresent()) {
 				String[] instruction = element.get().split(" ");
@@ -55,7 +55,7 @@ public class MergeTransform extends SourceTransform {
 					String value = instruction[instruction.length - 1];
 					
 					if(value.trim().equals("§")) {
-						List<String> paragraph = PatchUtils.readParagraph(patchData).orElseThrow(() -> new TransformException("Paragraph is not correctly delimited."));
+						List<String> paragraph = PatchUtils.readParagraph(stream).orElseThrow(() -> new TransformException("Paragraph is not correctly delimited."));
 						symbols.put(key, String.join(System.lineSeparator(), paragraph));
 					} else {
 						symbols.put(key, value);

@@ -22,6 +22,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import ch.innovazion.polymerge.utils.IOConsumer;
+
 public class HotPatcher extends Patcher {
 	
 	private final Map<Path, String> locationCache = new HashMap<>();
@@ -98,7 +100,7 @@ public class HotPatcher extends Patcher {
 		List<Path> patches = reverseLocationCache.get(location);
 		
 		if(patches != null) {
-		patches.forEach(super::patch);
+			patches.forEach(IOConsumer.of(super::patch));
 		}
 	}
 	

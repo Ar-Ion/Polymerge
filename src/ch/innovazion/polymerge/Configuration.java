@@ -1,10 +1,9 @@
 package ch.innovazion.polymerge;
 
-import java.util.LinkedList;
 import java.util.Optional;
 import java.util.function.Supplier;
-import java.util.Queue;
 
+import ch.innovazion.polymerge.utils.LineStream;
 import ch.innovazion.polymerge.utils.PatchUtils;
 
 public class Configuration {
@@ -21,10 +20,10 @@ public class Configuration {
 		this.name = name;
 	}
 		
-	public void read(Queue<String> lines) {
-		location = PatchUtils.find("@locate", lines).orElseThrow(err("Location not specified"));
-		patchMode = PatchMode.valueOf(PatchUtils.find("@mode", lines).orElseThrow(err("Patch mode not specified")).toUpperCase());
-		target = PatchUtils.find("@target", lines);
+	public void read(LineStream stream) {
+		location = PatchUtils.find("@locate", stream).orElseThrow(err("Location not specified"));
+		patchMode = PatchMode.valueOf(PatchUtils.find("@mode", stream).orElseThrow(err("Patch mode not specified")).toUpperCase());
+		target = PatchUtils.find("@target", stream);
 
 		loaded = true;
 	}
