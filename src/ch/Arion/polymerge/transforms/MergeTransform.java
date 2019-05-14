@@ -5,7 +5,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.HashMap;
-import java.util.LinkedList;
+import java.util.Queue;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -23,7 +23,7 @@ public class MergeTransform extends SourceTransform {
 	/*
 	 * Every time an entry from symbol map is found in the core code base, it gets replaced by its corresponding patch.
 	 */
-	public void apply(String identifier, LinkedList<String> patchData) throws IOException {
+	public void apply(String identifier, Queue<String> patchData) throws IOException {
 		Path target = resolveIdentifier(identifier);
 		Map<String, String> symbols = scanSymbols(patchData);
 		
@@ -41,7 +41,7 @@ public class MergeTransform extends SourceTransform {
 	 * 
 	 * A paragraph must always be enclosed by "@begin" and "@end" and for each of those, an entire line must be dedicated.
 	 */
-	private Map<String, String> scanSymbols(LinkedList<String> patchData) throws TransformException {
+	private Map<String, String> scanSymbols(Queue<String> patchData) throws TransformException {
 		Map<String, String> symbols = new HashMap<>();
 		
 		while(true) {

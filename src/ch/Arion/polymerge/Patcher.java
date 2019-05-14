@@ -10,12 +10,12 @@ import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.Optional;
+import java.util.Queue;
 
 import ch.innovazion.polymerge.transforms.AppendTransform;
 import ch.innovazion.polymerge.transforms.MergeTransform;
 import ch.innovazion.polymerge.transforms.ReplaceTransform;
 import ch.innovazion.polymerge.transforms.SourceTransform;
-import ch.innovazion.polymerge.utils.IOConsumer;
 import ch.innovazion.polymerge.utils.IOUtils;
 
 public class Patcher {
@@ -63,7 +63,7 @@ public class Patcher {
 	 * Patches a specific file.
 	 */
 	protected Configuration patch(Path file) throws IOException {
-		LinkedList<String> lines = new LinkedList<String>(Files.readAllLines(file));
+		Queue<String> lines = new LinkedList<String>(Files.readAllLines(file));
 		Configuration config = new Configuration(patches.relativize(file).toString());
 		
 		config.read(lines);
