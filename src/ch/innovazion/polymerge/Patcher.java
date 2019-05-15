@@ -127,7 +127,7 @@ public class Patcher {
 		Optional<String> specifiedTarget = config.getTarget();
 		
 		if(specifiedTarget.isPresent()) {
-			return specifiedTarget.get().equalsIgnoreCase(target);
+			return target.contains(specifiedTarget.get());
 		} else {
 			return true;
 		}
