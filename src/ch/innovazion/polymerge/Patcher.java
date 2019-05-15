@@ -24,12 +24,14 @@
 package ch.innovazion.polymerge;
 
 import java.io.IOException;
+import java.nio.file.FileVisitOption;
 import java.nio.file.FileVisitResult;
 import java.nio.file.FileVisitor;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.EnumSet;
 import java.util.Optional;
 
 import ch.innovazion.polymerge.transforms.AppendTransform;
@@ -76,12 +78,15 @@ public class Patcher {
 	private void patchAll(Path dir) throws IOException {
 		FileVisitor<Path> visitor = new SimpleFileVisitor<Path>() {
 			public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-			    patch(file);
+				if(!Files.isHidden(file)) {
+				    patch(file);
+				}
+				
 			    return FileVisitResult.CONTINUE;
 		    }
 		};
 		
-		Files.walkFileTree(dir, visitor);
+		Files.walkFileTree(dir, EnumSet.of(FileVisitOption.FOLLOW_LINKS), Integer.MAX_VALUE, visitor);
 	}
 	
 	/*
