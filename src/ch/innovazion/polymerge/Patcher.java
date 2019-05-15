@@ -33,6 +33,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Optional;
 
 import ch.innovazion.polymerge.transforms.AppendTransform;
+import ch.innovazion.polymerge.transforms.AssetTransform;
 import ch.innovazion.polymerge.transforms.MergeTransform;
 import ch.innovazion.polymerge.transforms.ReplaceTransform;
 import ch.innovazion.polymerge.transforms.SourceTransform;
@@ -104,6 +105,9 @@ public class Patcher {
 					break;
 				case MERGE:
 					transform = new MergeTransform(output);
+					break;
+				case ASSET:
+					transform = new AssetTransform(output);
 					break;
 				default:
 					throw new UnsupportedOperationException();

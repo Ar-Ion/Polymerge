@@ -57,11 +57,11 @@ public class IOUtils {
 	    
 		    public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
 		    	if(exc != null) {
-		    		throw exc;
+		    		System.err.println("Failed to delete directory '" + dir + "'");
+		    	} else {
+					Files.delete(dir);	
 		    	}
-		    	
-				Files.delete(dir);
-				
+		    					
 				return FileVisitResult.CONTINUE;      
 		    }
 		};

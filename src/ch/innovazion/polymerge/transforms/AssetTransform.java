@@ -21,8 +21,34 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *******************************************************************************/
-package ch.innovazion.polymerge;
+package ch.innovazion.polymerge.transforms;
 
-public enum PatchMode {
-	REPLACE, APPEND, MERGE, ASSET
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+
+import ch.innovazion.polymerge.utils.LineStream;
+import ch.innovazion.polymerge.utils.PatchUtils;
+
+public class AssetTransform extends SourceTransform {
+	public AssetTransform(Path root) {
+		super(root);
+	}
+
+	public void apply(String identifier, LineStream stream) throws IOException {
+		Path output = resolveIdentifier(identifier);
+		Path input = Paths.get(PatchUtils.find("@import", stream).orElseThrow(this::importRequired));
+		
+		if(Files.exists(input)) {
+			Files.copy(input, output, StandardCopyOption.REPLACE_EXISTING);
+		} else {
+			System.err.println("Couldn't import asset '" + input.toString() + "' while patching '" + identifier + "'");
+		}
+	}
+	
+	private IOException importRequired() {
+		return new IOException("Asset mode requires an @import instruction");
+	}
 }
