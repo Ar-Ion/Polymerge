@@ -24,15 +24,17 @@
 package ch.innovazion.polymerge.utils;
 
 import java.io.IOException;
+import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.FileVisitor;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.PathMatcher;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 
 public class IOUtils {
-	public static void copyDirectory(Path source, Path target) throws IOException {
+	public static void copyDirectory(Path source, Path target, PathMatcher exclude) throws IOException {
 		FileVisitor<Path> visitor = new SimpleFileVisitor<Path>() {
 			public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
 				Files.createDirectories(target.resolve(source.relativize(dir)));  
@@ -40,7 +42,13 @@ public class IOUtils {
 			}
     
 			public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-				Files.copy(file, target.resolve(source.relativize(file)));
+				Path relative = source.relativize(file);
+				Path destination = target.resolve(relative);
+				
+				if(!Files.exists(destination) && !exclude.matches(relative)) {
+					Files.copy(file, destination);
+				}
+				
 				return FileVisitResult.CONTINUE;      
 			}
 		};
@@ -48,10 +56,13 @@ public class IOUtils {
 		Files.walkFileTree(source, visitor);
 	}
 	
-	public static void deleteDirectory(Path path) throws IOException{
+	public static void deleteDirectory(Path path, PathMatcher exclude) throws IOException{
 		FileVisitor<Path> visitor = new SimpleFileVisitor<Path>() {
 		    public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-			    Files.delete(file);
+			    if(!exclude.matches(path.relativize(file))) {
+			    	Files.delete(file);
+			    }
+			    
 			    return FileVisitResult.CONTINUE;      
 		    }
 	    
@@ -59,7 +70,13 @@ public class IOUtils {
 		    	if(exc != null) {
 		    		System.err.println("Failed to delete directory '" + dir + "'");
 		    	} else {
-					Files.delete(dir);	
+		    		if(!exclude.matches(path.relativize(dir))) {
+		    			try {
+		    				Files.delete(path);
+		    			} catch(DirectoryNotEmptyException e) {
+		    				;
+		    			}
+				    }
 		    	}
 		    					
 				return FileVisitResult.CONTINUE;      

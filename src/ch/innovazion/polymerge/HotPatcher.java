@@ -30,6 +30,7 @@ import static java.nio.file.StandardWatchEventKinds.OVERFLOW;
 
 import java.io.IOException;
 import java.nio.file.FileSystems;
+import java.nio.file.FileVisitOption;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -41,6 +42,7 @@ import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -59,6 +61,8 @@ public class HotPatcher extends Patcher {
 	}
 	
 	public void patch() throws IOException {
+		System.out.println("[" + getTargetName() + "] Applying a full patch...");
+
 		super.patch();
 		
 		System.out.println("[" + getTargetName() + "] Starting watch service...");
@@ -97,7 +101,7 @@ public class HotPatcher extends Patcher {
 	}
 	
 	private void registerRecursiveWatchService(Path root, WatchService service, Kind<?>... events) throws IOException {
-		Files.walkFileTree(root, new SimpleFileVisitor<Path>() {
+		Files.walkFileTree(root, EnumSet.of(FileVisitOption.FOLLOW_LINKS), Integer.MAX_VALUE, new SimpleFileVisitor<Path>() {
 	        public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
 	            dir.register(service, events, SensitivityWatchEventModifier.HIGH);
 	            return FileVisitResult.CONTINUE;
@@ -107,6 +111,11 @@ public class HotPatcher extends Patcher {
 	
 	private void handleCoreChange(Path source, WatchEvent<Path> event) {
 		Path modified = source.resolve(event.context());
+		
+		if(!Files.isRegularFile(modified)) {
+			return;
+		}
+		
 		Path relative = getCore().relativize(modified);
 		
 		Kind<Path> kind = event.kind();
@@ -137,6 +146,11 @@ public class HotPatcher extends Patcher {
 	
 	private void handlePatchesChange(Path source, WatchEvent<Path> event) {
 		Path modified = source.resolve(event.context());
+		
+		if(!Files.isRegularFile(modified)) {
+			return;
+		}
+		
 		Path relative = getPatches().relativize(modified);
 		Kind<Path> kind = event.kind();
 		

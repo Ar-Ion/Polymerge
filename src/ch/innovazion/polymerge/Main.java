@@ -29,7 +29,7 @@ public class Main {
 	public static void main(String args[]) {
 		for(String target : args) {
 			new Thread(() ->  {
-				Polymerge polymerge = new Polymerge(Paths.get("sources"), Paths.get("patched"), target);
+				Polymerge polymerge = new Polymerge(Paths.get("sources"), Paths.get("build"), target);
 				polymerge.start();
 			}).start();
 		}
