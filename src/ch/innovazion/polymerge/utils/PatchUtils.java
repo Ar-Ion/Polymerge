@@ -40,6 +40,7 @@ public class PatchUtils {
 			String trim = line.trim();
 			
 			if(trim.startsWith(start)) {
+				stream.discardMark();
 				return Optional.of(trim.substring(start.length()).trim());
 			}
 		}
@@ -65,6 +66,7 @@ public class PatchUtils {
 				String trim = line.trim();
 
 				if(trim.startsWith("@end")) {
+					stream.discardMark();
 					return Optional.of(paragraph);
 				} else {
 					paragraph.add(line);
