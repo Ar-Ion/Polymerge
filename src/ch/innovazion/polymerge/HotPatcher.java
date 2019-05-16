@@ -81,7 +81,7 @@ public class HotPatcher extends Patcher {
 
 				if(coreKey != null) {
 					coreKey.pollEvents().stream().map(this::cast).forEach((event) -> {
-						handleCoreChange((Path) coreKey.watchable(), event);
+						handleCoreChange(coreService, (Path) coreKey.watchable(), event);
 					});
 					
 					coreKey.reset();
@@ -89,8 +89,9 @@ public class HotPatcher extends Patcher {
 				
 				if(patchesKey != null) {
 					patchesKey.pollEvents().stream().map(this::cast).forEach((event) -> {
-						handlePatchesChange((Path) patchesKey.watchable(), event);
+						handlePatchesChange(patchesService, (Path) patchesKey.watchable(), event);
 					});
+					
 					patchesKey.reset();
 				}
 												
@@ -104,18 +105,14 @@ public class HotPatcher extends Patcher {
 	private void registerRecursiveWatchService(Path root, WatchService service, Kind<?>... events) throws IOException {
 		Files.walkFileTree(root, EnumSet.of(FileVisitOption.FOLLOW_LINKS), Integer.MAX_VALUE, new SimpleFileVisitor<Path>() {
 	        public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-	            dir.register(service, events, SensitivityWatchEventModifier.HIGH);
+	        	dir.register(service, events, SensitivityWatchEventModifier.HIGH);
 	            return FileVisitResult.CONTINUE;
 	        }
 	    });
 	}
 	
-	private void handleCoreChange(Path source, WatchEvent<Path> event) {
+	private void handleCoreChange(WatchService service, Path source, WatchEvent<Path> event) {
 		Path modified = source.resolve(event.context());
-		
-		if(!Files.isRegularFile(modified)) {
-			return;
-		}
 		
 		Path relative = getCore().relativize(modified);
 		
@@ -132,6 +129,10 @@ public class HotPatcher extends Patcher {
 			} else if(kind == ENTRY_DELETE) {
 				Files.deleteIfExists(target);
 			}
+			
+			if(Files.isDirectory(modified)) {
+				modified.register(service, ENTRY_CREATE, ENTRY_DELETE, ENTRY_MODIFY, OVERFLOW);
+			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -145,7 +146,7 @@ public class HotPatcher extends Patcher {
 		}
 	}
 	
-	private void handlePatchesChange(Path source, WatchEvent<Path> event) {
+	private void handlePatchesChange(WatchService service, Path source, WatchEvent<Path> event) {
 		Path modified = source.resolve(event.context());
 		
 		if(!Files.isRegularFile(modified)) {
@@ -172,6 +173,10 @@ public class HotPatcher extends Patcher {
 			
 			if(kind == ENTRY_CREATE || kind == ENTRY_MODIFY) {
 				patch(modified);
+			}
+			
+			if(Files.isDirectory(modified)) {
+				modified.register(service, ENTRY_CREATE, ENTRY_DELETE, ENTRY_MODIFY, OVERFLOW);
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
