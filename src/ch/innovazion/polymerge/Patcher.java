@@ -29,8 +29,10 @@ import java.nio.file.FileVisitResult;
 import java.nio.file.FileVisitor;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.PathMatcher;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.Optional;
 
@@ -70,12 +72,13 @@ public class Patcher {
 	 */
 	private void install() throws IOException {
 		if(Files.exists(output)) {
-			IOUtils.deleteDirectory(output, manifest.getPathMatcher());
+			IOUtils.deleteDirectory(output, manifest.getPathMatchers());
 		}
 		
-		IOUtils.copyDirectory(core, output, FileSystems.getDefault().getPathMatcher("glob:manifest"));
+		PathMatcher manifestMatcher = FileSystems.getDefault().getPathMatcher("glob:manifest");		
+		IOUtils.copyDirectory(core, output, Arrays.asList(manifestMatcher));
 	}
-	
+		
 	/*
 	 * Patches all files in a directory.
 	 * Priority for the most nested patches.

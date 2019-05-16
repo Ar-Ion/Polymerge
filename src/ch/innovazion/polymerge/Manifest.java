@@ -5,30 +5,35 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 import ch.innovazion.polymerge.utils.LineStream;
 import ch.innovazion.polymerge.utils.PatchUtils;
 
 public class Manifest {
 	
-	private PathMatcher matcher = FileSystems.getDefault().getPathMatcher("glob:___.___");
+	private List<PathMatcher> staticMatchers = new ArrayList<>();
 	
 	public Manifest(Path manifest) {
 		if(Files.exists(manifest)) {
 			try {
 				LineStream stream = new LineStream(Files.readAllLines(manifest));
 				
-				PatchUtils.find("@static", stream).ifPresent((selector) -> {
-					this.matcher = FileSystems.getDefault().getPathMatcher(selector);
-					System.out.println("[Manifest] Static resources: " + selector);
-				});
+				while(stream.hasNext()) {
+					PatchUtils.find("@static", stream).ifPresent((selector) -> {
+						staticMatchers.add(FileSystems.getDefault().getPathMatcher(selector));
+						System.out.println("[Manifest] Static resources: " + selector);
+					});
+				}
 			} catch (IOException e) {
 				throw new RuntimeException(e);
 			}
 		}
 	}
 	
-	public PathMatcher getPathMatcher() {
-		return matcher;
+	public List<PathMatcher> getPathMatchers() {
+		return Collections.unmodifiableList(staticMatchers);
 	}
  }
