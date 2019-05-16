@@ -25,20 +25,23 @@ package ch.innovazion.polymerge.utils;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.Stack;
 
 public class LineStream implements Iterator<String>, Iterable<String> {
 
+	private final Stack<Integer> marks = new Stack<>();
 	private final List<String> lines;
 	
 	private int position = 0;
-	private int mark = 0;
+	private int limit;
 	
 	public LineStream(List<String> lines) {
 		this.lines = lines;
+		this.limit = lines.size();
 	}
 	
 	public boolean hasNext() {
-		return position < lines.size();
+		return position < limit;
 	}
 	
 	public String next() {
@@ -46,11 +49,19 @@ public class LineStream implements Iterator<String>, Iterable<String> {
 	}
 	
 	public void mark() {
-		mark = position;
+		marks.push(position);
 	}
 	
 	public void reset() {
-		position = mark;
+		position = marks.pop();
+	}
+	
+	public void limit(int size) {
+		if(limit >= 0 && limit < lines.size()) {
+			limit = size;
+		} else {
+			throw new IllegalArgumentException("Limit cannot exceed the total length of the stream");
+		}
 	}
 	
 	public int getLineNumber() {
