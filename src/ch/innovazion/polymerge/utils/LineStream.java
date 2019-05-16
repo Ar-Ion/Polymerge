@@ -52,6 +52,10 @@ public class LineStream implements Iterator<String>, Iterable<String> {
 		marks.push(position);
 	}
 	
+	public void discardMark() {
+		marks.pop();
+	}
+	
 	public void reset() {
 		position = marks.pop();
 	}
