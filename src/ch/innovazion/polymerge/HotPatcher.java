@@ -42,6 +42,7 @@ import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
@@ -50,6 +51,7 @@ import java.util.Map;
 import com.sun.nio.file.SensitivityWatchEventModifier;
 
 import ch.innovazion.polymerge.utils.IOConsumer;
+import ch.innovazion.polymerge.utils.IOUtils;
 import ch.innovazion.polymerge.utils.LineStream;
 
 public class HotPatcher extends Patcher {
@@ -113,25 +115,29 @@ public class HotPatcher extends Patcher {
 	
 	private void handleCoreChange(WatchService service, Path source, WatchEvent<Path> event) {
 		Path modified = source.resolve(event.context());
-		
 		Path relative = getCore().relativize(modified);
-		
+		Path target = getOutput().resolve(relative);
+
 		Kind<Path> kind = event.kind();
 		
 		try {
 			System.out.println("[" + getTargetName() + "] Watchservice (Core) [" + kind + "]: " + relative);
 			
-			Path target = getOutput().resolve(relative);
-			
-			if(kind == ENTRY_CREATE || kind == ENTRY_MODIFY) {
-				Files.copy(modified, target, StandardCopyOption.REPLACE_EXISTING);
-				patchFromCache(relative.toString());
-			} else if(kind == ENTRY_DELETE) {
-				Files.deleteIfExists(target);
-			}
-			
 			if(Files.isDirectory(modified)) {
 				modified.register(service, ENTRY_CREATE, ENTRY_DELETE, ENTRY_MODIFY, OVERFLOW);
+								
+				if(kind == ENTRY_CREATE) {
+					Files.createDirectories(target);
+				} else if(kind == ENTRY_DELETE) {
+					IOUtils.deleteDirectory(target, Arrays.asList());
+				}
+			} else {
+				if(kind == ENTRY_CREATE || kind == ENTRY_MODIFY) {
+					Files.copy(modified, target, StandardCopyOption.REPLACE_EXISTING);
+					patchFromCache(relative.toString());
+				} else if(kind == ENTRY_DELETE) {
+					Files.deleteIfExists(target);
+				}
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -139,7 +145,7 @@ public class HotPatcher extends Patcher {
 	}
 	
 	private void patchFromCache(String location) throws IOException {
-		List<Path> patches = reverseLocationCache.get(location);
+		List<Path> patches = new ArrayList<>(reverseLocationCache.get(location));
 		
 		if(patches != null) {
 			patches.forEach(IOConsumer.of(super::patch));
@@ -148,35 +154,31 @@ public class HotPatcher extends Patcher {
 	
 	private void handlePatchesChange(WatchService service, Path source, WatchEvent<Path> event) {
 		Path modified = source.resolve(event.context());
-		
-		if(!Files.isRegularFile(modified)) {
-			return;
-		}
-		
 		Path relative = getPatches().relativize(modified);
+		
 		Kind<Path> kind = event.kind();
 		
 		try {
 			System.out.println("[" + getTargetName() + "] Watchservice (Patches) [" + kind + "]: " + relative);
 						
-			if(kind == ENTRY_DELETE || kind == ENTRY_MODIFY) {
-				String location = locationCache.remove(modified);
-				
-				if(location != null) {
-					reverseLocationCache.get(location).remove(modified);
-					
-					Files.copy(getCore().resolve(location), getOutput().resolve(location), StandardCopyOption.REPLACE_EXISTING);
-					
-					patchFromCache(location);
-				}
-			}
-			
-			if(kind == ENTRY_CREATE || kind == ENTRY_MODIFY) {
-				patch(modified);
-			}
-			
 			if(Files.isDirectory(modified)) {
 				modified.register(service, ENTRY_CREATE, ENTRY_DELETE, ENTRY_MODIFY, OVERFLOW);
+			} else {
+				if(kind == ENTRY_DELETE || kind == ENTRY_MODIFY) {
+					String location = locationCache.remove(modified);
+					
+					if(location != null) {
+						reverseLocationCache.get(location).remove(modified);
+						
+						Files.copy(getCore().resolve(location), getOutput().resolve(location), StandardCopyOption.REPLACE_EXISTING);
+						
+						patchFromCache(location);
+					}
+				}
+				
+				if(kind == ENTRY_CREATE || kind == ENTRY_MODIFY) {
+					patch(modified);
+				}
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
