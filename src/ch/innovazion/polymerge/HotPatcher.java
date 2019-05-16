@@ -50,6 +50,7 @@ import java.util.Map;
 import com.sun.nio.file.SensitivityWatchEventModifier;
 
 import ch.innovazion.polymerge.utils.IOConsumer;
+import ch.innovazion.polymerge.utils.LineStream;
 
 public class HotPatcher extends Patcher {
 	
@@ -177,8 +178,8 @@ public class HotPatcher extends Patcher {
 		}
 	}
 	
-	public Configuration patch(Path path) throws IOException {
-		Configuration config = super.patch(path);
+	public Configuration patchLocation(Path path, LineStream stream) throws IOException {
+		Configuration config = super.patchLocation(path, stream);
 		
 		locationCache.put(path, config.getLocation());
 		reverseLocationCache.computeIfAbsent(config.getLocation(), e -> new ArrayList<>()).add(path);

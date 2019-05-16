@@ -60,12 +60,20 @@ public class LineStream implements Iterator<String>, Iterable<String> {
 		position = marks.pop();
 	}
 	
+	public int length() {
+		return lines.size();
+	}
+	
 	public void limit(int size) {
-		if(limit >= 0 && limit < lines.size()) {
+		if(limit >= 0 && limit <= lines.size()) {
 			limit = size;
 		} else {
 			throw new IllegalArgumentException("Limit cannot exceed the total length of the stream");
 		}
+	}
+	
+	public int getPosition() {
+		return position;
 	}
 	
 	public int getLineNumber() {

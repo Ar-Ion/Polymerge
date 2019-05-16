@@ -31,6 +31,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.LinkedList;
 import java.util.Optional;
 
 import ch.innovazion.polymerge.transforms.AppendTransform;
@@ -40,6 +41,7 @@ import ch.innovazion.polymerge.transforms.ReplaceTransform;
 import ch.innovazion.polymerge.transforms.SourceTransform;
 import ch.innovazion.polymerge.utils.IOUtils;
 import ch.innovazion.polymerge.utils.LineStream;
+import ch.innovazion.polymerge.utils.PatchUtils;
 
 public class Patcher {
 	private final String target;
@@ -103,11 +105,34 @@ public class Patcher {
 	}
 	
 	/*
-	 * Patches a specific file.
+	 * Reads a patch and checks for multiple patch entries.
 	 */
-	protected Configuration patch(Path file) throws IOException {
-		LineStream stream = new LineStream(Files.readAllLines(file));
-		Configuration config = new Configuration(patches.relativize(file).toString());
+	protected void patch(Path file) throws IOException {
+		LineStream stream = new LineStream(Files.readAllLines(file));		
+		LinkedList<Integer> locations = new LinkedList<>();
+		
+		stream.mark();
+		
+		while(PatchUtils.find("@locate", stream).isPresent()) {
+			locations.add(stream.getPosition());
+		}
+		
+		stream.reset();
+		
+		locations.removeFirst();
+		locations.addLast(stream.length());
+		
+		for(int nextLocation : locations) {
+			stream.limit(nextLocation);
+			patchLocation(file, stream);
+		}
+	}
+	
+	/*
+	 * Patches a target according to a given LineStream.
+	 */
+	protected Configuration patchLocation(Path path, LineStream stream) throws IOException {
+		Configuration config = new Configuration(patches.relativize(path).toString());
 		
 		config.read(stream);
 		
