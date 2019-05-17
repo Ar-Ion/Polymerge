@@ -196,7 +196,6 @@ public class HotPatcher extends Patcher {
 private class Bar {
 	;
 }
-
 /*
  
  	Those five lines are extremely useless but I love them.

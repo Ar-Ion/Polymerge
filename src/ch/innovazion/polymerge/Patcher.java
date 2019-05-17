@@ -52,6 +52,7 @@ public class Patcher {
 	private final Path output;
 	
 	private final Manifest manifest;
+	private final PatchLinker linker;
 	
 	public Patcher(String target, Path core, Path patches, Path output) {
 		this.target = target;
@@ -60,6 +61,7 @@ public class Patcher {
 		this.output = output;
 		
 		this.manifest = new Manifest(core.resolve("manifest"));
+		this.linker = new PatchLinker();
 	}
 		
 	public void patch() throws IOException {
@@ -111,7 +113,13 @@ public class Patcher {
 	 * Reads a patch and checks for multiple patch entries.
 	 */
 	protected void patch(Path file) throws IOException {
-		LineStream stream = new LineStream(Files.readAllLines(file));		
+		LineStream stream = new LineStream(Files.readAllLines(file));	
+		LineStream linkedStream = linker.link(stream, file);
+		
+		patchStream(file, linkedStream);
+	}
+	
+	private void patchStream(Path file, LineStream stream) throws IOException {
 		LinkedList<Integer> locations = new LinkedList<>();
 		
 		stream.mark();
@@ -122,9 +130,9 @@ public class Patcher {
 		
 		stream.reset();
 		
-		locations.removeFirst();
 		locations.addLast(stream.length());
-		
+		locations.removeFirst();
+
 		for(int nextLocation : locations) {
 			stream.limit(nextLocation);
 			patchLocation(file, stream);
@@ -193,5 +201,9 @@ public class Patcher {
 	
 	protected Path getOutput() {
 		return output;
+	}
+	
+	protected PatchLinker getLinker() {
+		return linker;
 	}
 }

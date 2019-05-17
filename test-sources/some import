@@ -1,0 +1,4 @@
+@locate test
+@mode merge
+
+@patch useless3 --- // Some dependency gives you a hug :-)

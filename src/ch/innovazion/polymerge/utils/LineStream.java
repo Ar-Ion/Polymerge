@@ -34,7 +34,7 @@ public class LineStream implements Iterator<String>, Iterable<String> {
 	
 	private int position = 0;
 	private int limit;
-	
+
 	public LineStream(List<String> lines) {
 		this.lines = lines;
 		this.limit = lines.size();

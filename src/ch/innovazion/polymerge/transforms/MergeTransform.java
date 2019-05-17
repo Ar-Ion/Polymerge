@@ -104,7 +104,7 @@ public class MergeTransform extends SourceTransform {
 						symbols.put(key, value);
 					}
 				} else {
-					throw new TransformException("Invalid command at line " + stream.getLineNumber() + ". Syntax: @patch key ::< prepend ::> value <:: append >");
+					throw new TransformException("Invalid command at line " + stream.getLineNumber() + ". Syntax: @patch key ---< prepend ---> value <--- append >");
 				}
 			} else {
 				break;

@@ -45,8 +45,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Observable;
+import java.util.Observer;
+import java.util.Set;
 
 import com.sun.nio.file.SensitivityWatchEventModifier;
 
@@ -54,13 +58,31 @@ import ch.innovazion.polymerge.utils.IOConsumer;
 import ch.innovazion.polymerge.utils.IOUtils;
 import ch.innovazion.polymerge.utils.LineStream;
 
-public class HotPatcher extends Patcher {
+public class HotPatcher extends Patcher implements Observer {
+	
+	private static final Kind<?>[] listenableEvents = { ENTRY_CREATE, ENTRY_DELETE, ENTRY_MODIFY, OVERFLOW };
 	
 	private final Map<Path, String> locationCache = new HashMap<>();
-	private final Map<String, List<Path>> reverseLocationCache = new HashMap<>();
+	private final Map<String, Set<Path>> reverseLocationCache = new HashMap<>();
+
+	private final WatchService coreService;
+	private final WatchService patchesService;
+	private final WatchService dynamicResourcesService;
 	
 	public HotPatcher(String target, Path core, Path patches, Path output) {
 		super(target, core, patches, output);
+		
+		try {
+			coreService = FileSystems.getDefault().newWatchService();
+			patchesService = FileSystems.getDefault().newWatchService();
+			dynamicResourcesService = FileSystems.getDefault().newWatchService();
+		} catch(IOException e) {
+			System.err.println("[" + target + "] Unable to create a watch service using the default filesystem");
+			System.exit(666);
+			throw new RuntimeException();
+		}
+		
+		getLinker().addObserver(this);
 	}
 	
 	public void patch() throws IOException {
@@ -69,9 +91,6 @@ public class HotPatcher extends Patcher {
 		super.patch();
 		
 		System.out.println("[" + getTargetName() + "] Starting watch service...");
-		
-		WatchService coreService = FileSystems.getDefault().newWatchService();
-		WatchService patchesService = FileSystems.getDefault().newWatchService();
 
 		registerRecursiveWatchService(getCore(), coreService, ENTRY_CREATE, ENTRY_DELETE, ENTRY_MODIFY, OVERFLOW);
 		registerRecursiveWatchService(getPatches(), patchesService, ENTRY_CREATE, ENTRY_DELETE, ENTRY_MODIFY, OVERFLOW);
@@ -80,6 +99,7 @@ public class HotPatcher extends Patcher {
 			try {
 				WatchKey coreKey = coreService.poll();
 				WatchKey patchesKey = patchesService.poll();
+				WatchKey dynamicKey = dynamicResourcesService.poll();
 
 				if(coreKey != null) {
 					coreKey.pollEvents().stream().map(this::cast).forEach((event) -> {
@@ -91,10 +111,18 @@ public class HotPatcher extends Patcher {
 				
 				if(patchesKey != null) {
 					patchesKey.pollEvents().stream().map(this::cast).forEach((event) -> {
-						handlePatchesChange(patchesService, (Path) patchesKey.watchable(), event);
+						handlePatchChange(patchesService, (Path) patchesKey.watchable(), event);
 					});
 					
 					patchesKey.reset();
+				}
+				
+				if(dynamicKey != null) {
+					dynamicKey.pollEvents().stream().map(this::cast).forEach((event) -> {
+						handleDynamicResourceChange(patchesService, (Path) dynamicKey.watchable(), event);
+					});
+					
+					dynamicKey.reset();
 				}
 												
 				Thread.sleep(200);
@@ -124,7 +152,7 @@ public class HotPatcher extends Patcher {
 			System.out.println("[" + getTargetName() + "] Watchservice (Core) [" + kind + "]: " + relative);
 			
 			if(Files.isDirectory(modified)) {
-				modified.register(service, ENTRY_CREATE, ENTRY_DELETE, ENTRY_MODIFY, OVERFLOW);
+				modified.register(service, listenableEvents);
 								
 				if(kind == ENTRY_CREATE) {
 					Files.createDirectories(target);
@@ -152,7 +180,7 @@ public class HotPatcher extends Patcher {
 		}
 	}
 	
-	private void handlePatchesChange(WatchService service, Path source, WatchEvent<Path> event) {
+	private void handlePatchChange(WatchService service, Path source, WatchEvent<Path> event) {
 		Path modified = source.resolve(event.context());
 		Path relative = getPatches().relativize(modified);
 		
@@ -162,34 +190,72 @@ public class HotPatcher extends Patcher {
 			System.out.println("[" + getTargetName() + "] Watchservice (Patches) [" + kind + "]: " + relative);
 						
 			if(Files.isDirectory(modified)) {
-				modified.register(service, ENTRY_CREATE, ENTRY_DELETE, ENTRY_MODIFY, OVERFLOW);
+				modified.register(service, listenableEvents);
 			} else {
-				if(kind == ENTRY_DELETE || kind == ENTRY_MODIFY) {
-					String location = locationCache.remove(modified);
-					
-					if(location != null) {
-						reverseLocationCache.get(location).remove(modified);
-						
-						Files.copy(getCore().resolve(location), getOutput().resolve(location), StandardCopyOption.REPLACE_EXISTING);
-						
-						patchFromCache(location);
-					}
-				}
-				
-				if(kind == ENTRY_CREATE || kind == ENTRY_MODIFY) {
-					patch(modified);
-				}
+				repatch(modified);
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}
+
+	private void handleDynamicResourceChange(WatchService service, Path source, WatchEvent<Path> event) {
+		Path modified = source.resolve(event.context());
+		Path relative = getPatches().resolve(event.context());
+		
+		PatchLinker linker = getLinker();
+		
+		try {
+			System.out.println("[" + getTargetName() + "] Watchservice (Dynamic Resources) [" + event.kind() + "]: " + relative);
+						
+			if(Files.exists(modified)) {
+				Path realPath = modified.toRealPath();
+				
+				List<Path> referencers = new ArrayList<>(linker.getReferencers(realPath));
+								
+				linker.invalidateImport(realPath);
+								
+				for(Path referencer : referencers) {
+					repatch(referencer);
+				}	
+			}
+		} catch(IOException e) {
+			e.printStackTrace();
+		}
+	}
 	
+	/*
+	 * Patches a given target again using a patch file.
+	 * 
+	 * Involves:
+	 * 	- The destruction and copying of the core file before patching
+	 * 	- Cache invalidation
+	 * 	- Actual patching of the target
+	 */
+	private void repatch(Path path) throws IOException {
+		String location = locationCache.remove(path);
+		
+		if(location != null) {
+			reverseLocationCache.get(location).remove(path);
+			
+			Files.copy(getCore().resolve(location), getOutput().resolve(location), StandardCopyOption.REPLACE_EXISTING);
+		
+			patchFromCache(location);
+		}
+			
+		if(Files.exists(path)) {
+			patch(path);
+		}
+	}
+	
+	/*
+	 * Saves the patch <-> location entry in the cache.
+	 */
 	public Configuration patchLocation(Path path, LineStream stream) throws IOException {
 		Configuration config = super.patchLocation(path, stream);
 		
 		locationCache.put(path, config.getLocation());
-		reverseLocationCache.computeIfAbsent(config.getLocation(), e -> new ArrayList<>()).add(path);
+		reverseLocationCache.computeIfAbsent(config.getLocation(), e -> new HashSet<>()).add(path);
 		
 		return config;
 	}
@@ -198,5 +264,19 @@ public class HotPatcher extends Patcher {
 	@SuppressWarnings("unchecked")
 	private WatchEvent<Path> cast(WatchEvent<?> event) {
 		return (WatchEvent<Path>) event;
+	}
+
+	/*
+	 * When the patch linker imports a new dynamic resource, 
+	 * this method is called and the path of the dynamic resource becomes handled by the watch service.
+	 */
+	public void update(Observable o, Object arg) {
+		Path path = (Path) arg;
+
+		try {
+			path.getParent().register(dynamicResourcesService, listenableEvents, SensitivityWatchEventModifier.HIGH);
+		} catch (IOException e) {
+			System.err.println("Unable to register a watch service for '" + path + "'");
+		}
 	}
 }

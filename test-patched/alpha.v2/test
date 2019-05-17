@@ -193,10 +193,7 @@ public class HotPatcher extends Patcher {
 	}
 }
 
-private class Foo {
-	;
-}
-
+// Some dependency gives you a hug :-)
 /*
  
  	Those five lines are useless but I love them.

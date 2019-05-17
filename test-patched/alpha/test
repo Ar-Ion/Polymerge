@@ -182,7 +182,7 @@ public class HotPatcher extends Patcher {
 	}
 }
 
-patch<useless3>
+// Some dependency gives you a hug :-)
 /*
  
  	Those five lines are useless but I love them.

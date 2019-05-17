@@ -32,7 +32,7 @@ import ch.innovazion.polymerge.utils.PatchUtils;
 public class Configuration {
 	
 	private final String name;
-	
+
 	private boolean loaded = false;
 	
 	private String location;
@@ -43,7 +43,7 @@ public class Configuration {
 		this.name = name;
 	}
 		
-	public void read(LineStream stream) {
+	public void read(LineStream stream) {		
 		location = PatchUtils.find("@locate", stream).orElseThrow(err("Location not specified"));
 		patchMode = PatchMode.valueOf(PatchUtils.find("@mode", stream).orElseThrow(err("Patch mode not specified")).toUpperCase());
 		target = PatchUtils.find("@target", stream);
