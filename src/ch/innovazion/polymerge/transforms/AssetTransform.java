@@ -39,12 +39,12 @@ public class AssetTransform extends SourceTransform {
 
 	public void apply(String identifier, LineStream stream) throws IOException {
 		Path output = resolveIdentifier(identifier);
-		Path input = Paths.get(PatchUtils.find("@import", stream).orElseThrow(this::importRequired));
+		Path input = Paths.get(PatchUtils.find("@raw", stream).orElseThrow(this::importRequired));
 		
 		if(Files.exists(input)) {
 			Files.copy(input, output, StandardCopyOption.REPLACE_EXISTING);
 		} else {
-			System.err.println("Couldn't import asset '" + input.toString() + "' while patching '" + identifier + "'");
+			System.err.println("Unable to import asset '" + input.toString() + "' while patching '" + identifier + "'");
 		}
 	}
 	
