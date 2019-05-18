@@ -51,27 +51,26 @@ public class PatchLinker extends Observable {
 	 * Returns the LineStream representation of the requested imports according to the @import instructions.
 	 * Warning: this method does not preserve the stream meta data, such as the marks (and the internal position and limit).
 	 */
-	private LineStream link(LineStream stream, Path source, HashSet<String> alreadyImported) throws IOException {
+	private LineStream link(LineStream stream, Path source, HashSet<Path> alreadyImported) throws IOException {
 		List<String> linkedLines = new ArrayList<>();
 		List<String> imports = readImports(stream);
 		
 		for(String name : imports) {
-			if(!alreadyImported.contains(name)) {
-				linkedLines.addAll(resolveImport(source, name));
-				alreadyImported.add(name);
+			Path path = resolveImportPath(source, name);
+			
+			if(!alreadyImported.contains(path)) {
+				LineStream imported = resolveImport(source, name);
+				LineStream linkedImported = link(imported, path, alreadyImported);
+				
+				linkedImported.forEach(linkedLines::add);
+				
+				alreadyImported.add(path);
 			}
 		}
 		
 		stream.forEach(linkedLines::add);
-		
-		LineStream linkedStream = new LineStream(linkedLines);
-		
-		if(imports.size() > 0) {
-			return link(linkedStream, source, alreadyImported);
-		}
-
-		
-		return linkedStream;
+				
+		return new LineStream(linkedLines);
 	}
 	
 	/*
@@ -102,22 +101,26 @@ public class PatchLinker extends Observable {
 	/*
 	 * Tries to fetch a pre-loaded version of the patch to import from the cache.
 	 */
-	private List<String> resolveImport(Path source, String name) throws IOException {
-		Path resolved = source.getParent().resolve(name);
+	private LineStream resolveImport(Path source, String name) throws IOException {
+		Path resolved = resolveImportPath(source, name);
 		
 		if(Files.exists(resolved)) {
 			LinkerCacheEntry entry = cache.computeIfAbsent(resolved.toRealPath(), LinkerCacheEntry::new);
 			
 			entry.referencers.add(source);
 			
-			return entry.getContent();
+			return new LineStream(entry.getContent());
 		} else {
 			System.err.println("[Linker] Failed to resolve import '" + name + "' while linking '" + source + "'");
 		}
 		
-		return Collections.emptyList();
+		return new LineStream(Collections.emptyList());
 	}
 		
+	private Path resolveImportPath(Path source, String name) {
+		return source.getParent().resolve(name);
+	}
+	
 	
 	
 	private class LinkerCacheEntry {

@@ -72,7 +72,7 @@ public abstract class FileSystemHandler {
 					System.err.println("You must ensure all the resources you import remain in the same root project directory.");
 				}
 				
-				if(shouldHandle(relative)) {
+				if(shouldHandle(base, relative)) {
 					try {
 						handleChange(service, path, relative, event.kind());
 					} catch(IOException e) {
@@ -106,7 +106,7 @@ public abstract class FileSystemHandler {
 		}
 	}
 	
-	public boolean shouldHandle(Path relative) {
+	protected boolean shouldHandle(Path base, Path relative) {
 		return true;
 	}
 	
@@ -115,5 +115,5 @@ public abstract class FileSystemHandler {
 		return (WatchEvent<Path>) event;
 	}
 	
-	public abstract void handleChange(WatchService service, Path path, Path relative, Kind<Path> kind) throws IOException;
+	protected abstract void handleChange(WatchService service, Path path, Path relative, Kind<Path> kind) throws IOException;
 }

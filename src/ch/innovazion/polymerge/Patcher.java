@@ -125,7 +125,7 @@ public class Patcher {
 		stream.mark();
 		
 		while(PatchUtils.find("@locate", stream).isPresent()) {
-			locations.add(stream.getPosition());
+			locations.add(stream.getPosition() - 1);
 		}
 		
 		stream.reset();

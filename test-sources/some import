@@ -2,3 +2,7 @@
 @mode merge
 
 @patch useless3 --- // Some dependency gives you a hug :-)
+
+@locate sub/test
+@mode append
+Hi

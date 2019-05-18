@@ -28,6 +28,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import ch.innovazion.polymerge.reactive.HotPatcher;
+import ch.innovazion.polymerge.reactive.monolithic.MonolithicHotPatcher;
 
 public class Polymerge {
 	
@@ -67,8 +68,14 @@ public class Polymerge {
 		Path patches = sources.resolve(main);
 		Path output = patched.resolve(target);
 		
-		if(Files.exists(patches) && Files.isDirectory(patches)) {
-			Patcher patcher = new HotPatcher(target, core, patches, output);
+		if(Files.exists(patches)) {
+			Patcher patcher = null;
+
+			if(Files.isDirectory(patches)) {
+				patcher = new HotPatcher(target, core, patches, output);
+			} else {
+				patcher = new MonolithicHotPatcher(target, core, patches, output);
+			}
 			
 			try {
 				patcher.patch();

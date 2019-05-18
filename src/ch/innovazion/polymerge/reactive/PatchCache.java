@@ -26,17 +26,17 @@ package ch.innovazion.polymerge.reactive;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 
 public class PatchCache {
 	
-	private final Map<Path, String> locationCache = new HashMap<>();
+	private final Map<Path, Set<String>> locationCache = new HashMap<>();
 	private final Map<String, Set<Path>> reverseLocationCache = new HashMap<>();
 	
 	private final Consumer<Path> patcher;
@@ -53,18 +53,22 @@ public class PatchCache {
 		}
 	}
 	
-	public void addEntry(Path path, String location) {
-		locationCache.put(path, location);
+	public void addEntry(Path path, String location) {		
+		locationCache.computeIfAbsent(path, e -> new HashSet<>()).add(location);
 		reverseLocationCache.computeIfAbsent(location, e -> new HashSet<>()).add(path);
 	}
 
-	public Optional<String> invalidate(Path path) {
-		String location = locationCache.remove(path);
+	public Set<String> invalidate(Path path) {
+		Set<String> locations = locationCache.remove(path);
 		
-		if(location != null) {
-			reverseLocationCache.get(location).remove(path);
+		if(locations != null) {
+			for(String location : locations) {
+				reverseLocationCache.get(location).remove(path);
+			}
+			
+			return locations;
+		} else {
+			return Collections.emptySet();
 		}
-		
-		return Optional.ofNullable(location);
 	}
 }

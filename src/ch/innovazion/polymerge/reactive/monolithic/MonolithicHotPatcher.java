@@ -21,22 +21,27 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *******************************************************************************/
-package ch.innovazion.polymerge.test;
+package ch.innovazion.polymerge.reactive.monolithic;
 
-import java.nio.file.Paths;
+import java.io.IOException;
+import java.nio.file.Path;
 
-import ch.innovazion.polymerge.Polymerge;
+import ch.innovazion.polymerge.reactive.FileSystemHandler;
+import ch.innovazion.polymerge.reactive.HotPatcher;
 
-public class FeatureTests {
-	
-	private static final String[] testArgs = { "alpha.v2", "alpha", "omega", "monolithic" };
-	
-	public static void main(String args[]) {
-		for(String target : testArgs) {
-			new Thread(() ->  {
-				Polymerge polymerge = new Polymerge(Paths.get("test-sources"), Paths.get("test-patched"), target);
-				polymerge.start();
-			}).start();
-		}
+public class MonolithicHotPatcher extends HotPatcher {
+
+	public MonolithicHotPatcher(String target, Path core, Path patches, Path output) {
+		super(target, core, patches, output);
 	}
+	
+	protected FileSystemHandler createPatchesFSHandler(Path patches) throws IOException {
+		return new MonolithicPatchFSHandler(patches, this);
+	}
+	
+	protected void registerHandlers() {
+		coreHandler.registerRecursive(getCore());
+		patchesHandler.register(getPatches().getParent());
+	}
+
 }

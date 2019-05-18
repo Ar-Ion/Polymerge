@@ -40,9 +40,9 @@ public class HotPatcher extends Patcher implements Observer {
 		
 	private final PatchCache cache;
 	
-	private final FileSystemHandler coreHandler;
-	private final FileSystemHandler patchesHandler;
-	private final FileSystemHandler dynamicHandler;
+	protected final FileSystemHandler coreHandler;
+	protected final FileSystemHandler patchesHandler;
+	protected final FileSystemHandler dynamicHandler;
 	
 	public HotPatcher(String target, Path core, Path patches, Path output) {
 		super(target, core, patches, output);
@@ -51,7 +51,7 @@ public class HotPatcher extends Patcher implements Observer {
 			this.cache = new PatchCache(IOConsumer.of(this::patch));
 			
 			this.coreHandler = new CoreFSHandler(core, output, cache);
-			this.patchesHandler = new PatchesFSHandler(patches, this);
+			this.patchesHandler = createPatchesFSHandler(patches);
 			this.dynamicHandler = new DynamicFSHandler(Paths.get("").toAbsolutePath(), this, getLinker());
 		} catch(IOException e) {
 			System.err.println("[" + target + "] Unable to create a watch service using the default filesystem");
@@ -62,6 +62,10 @@ public class HotPatcher extends Patcher implements Observer {
 		getLinker().addObserver(this);
 	}
 	
+	protected FileSystemHandler createPatchesFSHandler(Path patches) throws IOException {
+		return new PatchesFSHandler(patches, this);
+	}
+	
 	public void patch() throws IOException {
 		System.out.println("[" + getTargetName() + "] Applying a full patch...");
 
@@ -69,8 +73,7 @@ public class HotPatcher extends Patcher implements Observer {
 		
 		System.out.println("[" + getTargetName() + "] Starting watch service...");
 
-		coreHandler.registerRecursive(getCore());
-		patchesHandler.registerRecursive(getPatches());
+		registerHandlers();
 		
 		while(true) {
 			try {
@@ -85,6 +88,11 @@ public class HotPatcher extends Patcher implements Observer {
 		}
 	}
 	
+	protected void registerHandlers() {
+		coreHandler.registerRecursive(getCore());
+		patchesHandler.registerRecursive(getPatches());
+	}
+	
 	/*
 	 * Patches a given target again using a patch file.
 	 * 
@@ -94,11 +102,11 @@ public class HotPatcher extends Patcher implements Observer {
 	 * 	- Actual patching of the target
 	 */
 	public void hotPatch(Path path) throws IOException {		
-		cache.invalidate(path).ifPresent(IOConsumer.of(location -> {			
+		cache.invalidate(path).forEach(IOConsumer.of(location -> {			
 			Files.copy(getCore().resolve(location), getOutput().resolve(location), StandardCopyOption.REPLACE_EXISTING);
 			cache.patch(location);
 		}));
-		
+				
 		if(Files.exists(path)) {
 			patch(path);
 		}
@@ -107,7 +115,7 @@ public class HotPatcher extends Patcher implements Observer {
 	/*
 	 * Saves the [patch <-> location] entry in the cache.
 	 */
-	public Configuration patchLocation(Path path, LineStream stream) throws IOException {
+	public Configuration patchLocation(Path path, LineStream stream) throws IOException {		
 		Configuration config = super.patchLocation(path, stream);
 		cache.addEntry(path, config.getLocation());
 		return config;

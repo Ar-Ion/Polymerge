@@ -83,4 +83,8 @@ public class LineStream implements Iterator<String>, Iterable<String> {
 	public Iterator<String> iterator() {
 		return this;
 	}
+	
+	public String toString() {
+		return "----- <LineStream> -----\n" + String.join("\n", lines.subList(position, limit)) + "\n----- </LineStream> -----";
+	}
 }

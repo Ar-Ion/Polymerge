@@ -1,0 +1,3 @@
+@import alpha/patch1
+@import some import
+@import omega/patch2
