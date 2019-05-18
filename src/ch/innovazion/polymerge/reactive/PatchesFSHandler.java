@@ -33,13 +33,14 @@ public class PatchesFSHandler extends FileSystemHandler {
 	
 	private final HotPatcher patcher;
 	
-	public PatchesFSHandler(Path base, HotPatcher patcher) throws IOException {
-		super(base);
+	public PatchesFSHandler(String name, Path base, HotPatcher patcher) throws IOException {
+		super(name, base);
+		
 		this.patcher = patcher;
 	}
 
 	public void handleChange(WatchService service, Path path, Path relative, Kind<Path> kind) throws IOException {		
-		System.out.println("Watchservice (Patches) [" + kind + "]: " + relative);
+		System.out.println(getDebugPrependable() + "Watchservice (Patches) [" + kind + "]: " + relative);
 					
 		if(Files.isDirectory(path)) {
 			path.register(service, listenableEvents);

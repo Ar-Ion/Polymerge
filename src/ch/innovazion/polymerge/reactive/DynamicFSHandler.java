@@ -38,14 +38,15 @@ public class DynamicFSHandler extends FileSystemHandler {
 	private final HotPatcher patcher;
 	private final PatchLinker linker;
 	
-	public DynamicFSHandler(Path base, HotPatcher patcher, PatchLinker linker) throws IOException {
-		super(base);
+	public DynamicFSHandler(String name, Path base, HotPatcher patcher, PatchLinker linker) throws IOException {
+		super(name, base);
+		
 		this.patcher = patcher;
 		this.linker = linker;
 	}
 
 	public void handleChange(WatchService service, Path path, Path relative, Kind<Path> kind) throws IOException {		
-		System.out.println("Watchservice (Dynamic Resources) [" + kind + "]: " + relative);
+		System.out.println(getDebugPrependable() + "Watchservice (Dynamic Resources) [" + kind + "]: " + relative);
 		
 		if(Files.exists(path)) {
 			List<Path> referencers = new ArrayList<>(linker.getReferencers(path));

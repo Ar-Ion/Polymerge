@@ -2,7 +2,6 @@
 
 @locate test
 @mode merge
-@target alpha.v2
 
 @patch useless1 --- private void thisMethodIsUseless() {}
 

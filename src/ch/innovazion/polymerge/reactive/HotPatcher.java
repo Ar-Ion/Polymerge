@@ -50,9 +50,9 @@ public class HotPatcher extends Patcher implements Observer {
 		try {
 			this.cache = new PatchCache(IOConsumer.of(this::patch));
 			
-			this.coreHandler = new CoreFSHandler(core, output, cache);
+			this.coreHandler = new CoreFSHandler(target, core, output, cache);
 			this.patchesHandler = createPatchesFSHandler(patches);
-			this.dynamicHandler = new DynamicFSHandler(Paths.get("").toAbsolutePath(), this, getLinker());
+			this.dynamicHandler = new DynamicFSHandler(target, Paths.get("").toAbsolutePath(), this, getLinker());
 		} catch(IOException e) {
 			System.err.println("[" + target + "] Unable to create a watch service using the default filesystem");
 			System.exit(666);
@@ -63,7 +63,7 @@ public class HotPatcher extends Patcher implements Observer {
 	}
 	
 	protected FileSystemHandler createPatchesFSHandler(Path patches) throws IOException {
-		return new PatchesFSHandler(patches, this);
+		return new PatchesFSHandler(getTargetName(), patches, this);
 	}
 	
 	public void patch() throws IOException {

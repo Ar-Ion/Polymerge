@@ -49,10 +49,12 @@ public abstract class FileSystemHandler {
 	
 	protected static final Kind<?>[] listenableEvents = { ENTRY_CREATE, ENTRY_DELETE, ENTRY_MODIFY, OVERFLOW };
 
+	private final String name;
 	private final Path base;
 	private final WatchService service;
 	
-	public FileSystemHandler(Path base) throws IOException {
+	public FileSystemHandler(String name, Path base) throws IOException {
+		this.name = name;
 		this.base = base;
 		this.service = FileSystems.getDefault().newWatchService();
 	}
@@ -68,10 +70,10 @@ public abstract class FileSystemHandler {
 				
 				if(!base.equals(path)) {
 					try {
-						relative = base.relativize(path.toRealPath());
+						relative = base.toRealPath().relativize(path.toRealPath());
 					} catch(IllegalArgumentException | IOException e) {
-						System.err.println("Resource '" + path + "' is out of scope.");
-						System.err.println("You must ensure all the resources you import remain in the same root project directory.");
+						System.err.println(getDebugPrependable() + "Resource '" + path + "' is out of scope.");
+						System.err.println(getDebugPrependable() + "You must ensure all the resources you import remain in the same root project directory.");
 					}
 				} else {
 					relative = Paths.get("<root>");
@@ -94,7 +96,7 @@ public abstract class FileSystemHandler {
 		try {
 			path.register(service, listenableEvents, SensitivityWatchEventModifier.HIGH);
 		} catch (IOException e) {
-			System.err.println("Unable to register a watch service for '" + path + "'");
+			System.err.println(getDebugPrependable() + "Unable to register a watch service for '" + path + "'");
 		}
 	}
 	
@@ -107,8 +109,12 @@ public abstract class FileSystemHandler {
 			    }
 			});
 		} catch (IOException e) {
-			System.err.println("Unable to register a watch service for '" + root + "' and its subdirectories");
+			System.err.println(getDebugPrependable() + "Unable to register a watch service for '" + root + "' and its subdirectories");
 		}
+	}
+	
+	protected String getDebugPrependable() {
+		return "[" + name + "] ";
 	}
 	
 	protected boolean shouldHandle(Path base, Path path) {

@@ -31,8 +31,8 @@ import ch.innovazion.polymerge.reactive.PatchesFSHandler;
 
 public class MonolithicPatchFSHandler extends PatchesFSHandler {
 
-	public MonolithicPatchFSHandler(Path base, HotPatcher patcher) throws IOException {
-		super(base, patcher);
+	public MonolithicPatchFSHandler(String name, Path base, HotPatcher patcher) throws IOException {
+		super(name, base, patcher);
 	}
 	
 	protected boolean shouldHandle(Path base, Path path) {

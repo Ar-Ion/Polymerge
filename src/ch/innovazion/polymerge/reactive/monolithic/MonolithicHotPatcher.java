@@ -36,7 +36,7 @@ public class MonolithicHotPatcher extends HotPatcher {
 	}
 	
 	protected FileSystemHandler createPatchesFSHandler(Path patches) throws IOException {
-		return new MonolithicPatchFSHandler(patches, this);
+		return new MonolithicPatchFSHandler(getTargetName(), patches, this);
 	}
 	
 	protected void registerHandlers() {

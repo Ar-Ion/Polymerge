@@ -42,8 +42,9 @@ public class CoreFSHandler extends FileSystemHandler {
 	private final Path output;
 	private final PatchCache cache;
 	
-	public CoreFSHandler(Path base, Path output, PatchCache cache) throws IOException {
-		super(base);
+	public CoreFSHandler(String name, Path base, Path output, PatchCache cache) throws IOException {
+		super(name, base);
+		
 		this.output = output;
 		this.cache = cache;
 	}
@@ -51,7 +52,7 @@ public class CoreFSHandler extends FileSystemHandler {
 	public void handleChange(WatchService service, Path path, Path relative, Kind<Path> kind) throws IOException {
 		Path target = output.resolve(relative);
 		
-		System.out.println("Watchservice (Core) [" + kind + "]: " + relative);
+		System.out.println(getDebugPrependable() + "Watchservice (Core) [" + kind + "]: " + relative);
 		
 		if(Files.isDirectory(path)) {
 			path.register(service, listenableEvents);
