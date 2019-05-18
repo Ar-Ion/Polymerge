@@ -49,6 +49,6 @@ public class AssetTransform extends SourceTransform {
 	}
 	
 	private IOException importRequired() {
-		return new IOException("Asset mode requires an @import instruction");
+		return new IOException("Asset mode requires an @raw instruction");
 	}
 }
