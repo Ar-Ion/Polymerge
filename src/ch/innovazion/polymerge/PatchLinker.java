@@ -76,6 +76,9 @@ public class PatchLinker extends Observable {
 		}
 		
 		stream.forEach(linkedLines::add);
+		
+		// Filter out comments
+		linkedLines.removeIf(line -> line.startsWith("-----"));
 						
 		return new LineStream(linkedLines);
 	}
