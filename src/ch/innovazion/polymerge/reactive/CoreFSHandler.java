@@ -21,65 +21,53 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *******************************************************************************/
-package ch.innovazion.polymerge;
+package ch.innovazion.polymerge.reactive;
+
+import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
+import static java.nio.file.StandardWatchEventKinds.ENTRY_DELETE;
+import static java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.WatchEvent.Kind;
+import java.nio.file.WatchService;
+import java.util.Collections;
 
-import ch.innovazion.polymerge.reactive.HotPatcher;
+import ch.innovazion.polymerge.utils.IOUtils;
 
-public class Polymerge {
+public class CoreFSHandler extends FileSystemHandler {
 	
-	private final Path sources;
-	private final Path patched;
-	private final Path core;
+	private final Path output;
+	private final PatchCache cache;
 	
-	private final String target;
-	
-	public Polymerge(Path sources, Path patched, String target) {
-		this.sources = sources;
-		this.patched = patched;
-		this.core = sources.resolve("core");
-		
-		this.target = target;
+	public CoreFSHandler(Path base, Path output, PatchCache cache) throws IOException {
+		super(base);
+		this.output = output;
+		this.cache = cache;
 	}
-	
-	public void start() {
-		try {
-			Files.createDirectories(sources);
-			Files.createDirectories(patched);
-			Files.createDirectories(core);
-		} catch (IOException e) {
-			System.err.println("Failed to create root directories.");
-			return;
-		}
-			
-		System.out.println("Starting HotPatcher for target '" + target + "'...");
+
+	public void handleChange(WatchService service, Path path, Path relative, Kind<Path> kind) throws IOException {
+		Path target = output.resolve(relative);
 		
-		String[] splitted = target.split("\\.");
-		String main = target;
+		System.out.println("Watchservice (Core) [" + kind + "]: " + relative);
 		
-		if(splitted.length > 0) {
-			main = splitted[0];
-		}
-		
-		Path patches = sources.resolve(main);
-		Path output = patched.resolve(target);
-		
-		if(Files.exists(patches) && Files.isDirectory(patches)) {
-			Patcher patcher = new HotPatcher(target, core, patches, output);
-			
-			try {
-				patcher.patch();
-				System.out.println("Patcher terminated normally.");
-			} catch (IOException e) {
-				e.printStackTrace();
-				System.err.println("Patcher terminated with failure.");
+		if(Files.isDirectory(path)) {
+			path.register(service, listenableEvents);
+							
+			if(kind == ENTRY_CREATE) {
+				Files.createDirectories(target);
+			} else if(kind == ENTRY_DELETE) {
+				IOUtils.deleteDirectory(target, Collections.emptyList());
 			}
-			
 		} else {
-			System.err.println("Nothing to be done.");
+			if(kind == ENTRY_CREATE || kind == ENTRY_MODIFY) {
+				Files.copy(path, target, StandardCopyOption.REPLACE_EXISTING);
+				cache.patch(relative.toString());
+			} else if(kind == ENTRY_DELETE) {
+				Files.deleteIfExists(target);
+			}
 		}
 	}
 }

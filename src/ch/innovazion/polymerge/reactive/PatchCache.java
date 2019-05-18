@@ -21,65 +21,50 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *******************************************************************************/
-package ch.innovazion.polymerge;
+package ch.innovazion.polymerge.reactive;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.function.Consumer;
 
-import ch.innovazion.polymerge.reactive.HotPatcher;
-
-public class Polymerge {
+public class PatchCache {
 	
-	private final Path sources;
-	private final Path patched;
-	private final Path core;
+	private final Map<Path, String> locationCache = new HashMap<>();
+	private final Map<String, Set<Path>> reverseLocationCache = new HashMap<>();
 	
-	private final String target;
+	private final Consumer<Path> patcher;
 	
-	public Polymerge(Path sources, Path patched, String target) {
-		this.sources = sources;
-		this.patched = patched;
-		this.core = sources.resolve("core");
-		
-		this.target = target;
+	protected PatchCache(Consumer<Path> patcher) {
+		this.patcher = patcher;
 	}
 	
-	public void start() {
-		try {
-			Files.createDirectories(sources);
-			Files.createDirectories(patched);
-			Files.createDirectories(core);
-		} catch (IOException e) {
-			System.err.println("Failed to create root directories.");
-			return;
+	public void patch(String location) throws IOException {
+		List<Path> patches = new ArrayList<>(reverseLocationCache.get(location));
+		
+		if(patches != null) {
+			patches.forEach(patcher);
 		}
-			
-		System.out.println("Starting HotPatcher for target '" + target + "'...");
+	}
+	
+	public void addEntry(Path path, String location) {
+		locationCache.put(path, location);
+		reverseLocationCache.computeIfAbsent(location, e -> new HashSet<>()).add(path);
+	}
+
+	public Optional<String> invalidate(Path path) {
+		String location = locationCache.remove(path);
 		
-		String[] splitted = target.split("\\.");
-		String main = target;
-		
-		if(splitted.length > 0) {
-			main = splitted[0];
+		if(location != null) {
+			reverseLocationCache.get(location).remove(path);
 		}
 		
-		Path patches = sources.resolve(main);
-		Path output = patched.resolve(target);
-		
-		if(Files.exists(patches) && Files.isDirectory(patches)) {
-			Patcher patcher = new HotPatcher(target, core, patches, output);
-			
-			try {
-				patcher.patch();
-				System.out.println("Patcher terminated normally.");
-			} catch (IOException e) {
-				e.printStackTrace();
-				System.err.println("Patcher terminated with failure.");
-			}
-			
-		} else {
-			System.err.println("Nothing to be done.");
-		}
+		return Optional.ofNullable(location);
 	}
 }

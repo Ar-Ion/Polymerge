@@ -21,65 +21,40 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *******************************************************************************/
-package ch.innovazion.polymerge;
+package ch.innovazion.polymerge.reactive;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.WatchEvent.Kind;
+import java.util.ArrayList;
+import java.util.List;
+import java.nio.file.WatchService;
 
-import ch.innovazion.polymerge.reactive.HotPatcher;
+import ch.innovazion.polymerge.PatchLinker;
 
-public class Polymerge {
+public class DynamicFSHandler extends FileSystemHandler {
 	
-	private final Path sources;
-	private final Path patched;
-	private final Path core;
+	private final HotPatcher patcher;
+	private final PatchLinker linker;
 	
-	private final String target;
-	
-	public Polymerge(Path sources, Path patched, String target) {
-		this.sources = sources;
-		this.patched = patched;
-		this.core = sources.resolve("core");
-		
-		this.target = target;
+	public DynamicFSHandler(Path base, HotPatcher patcher, PatchLinker linker) throws IOException {
+		super(base);
+		this.patcher = patcher;
+		this.linker = linker;
 	}
-	
-	public void start() {
-		try {
-			Files.createDirectories(sources);
-			Files.createDirectories(patched);
-			Files.createDirectories(core);
-		} catch (IOException e) {
-			System.err.println("Failed to create root directories.");
-			return;
-		}
-			
-		System.out.println("Starting HotPatcher for target '" + target + "'...");
-		
-		String[] splitted = target.split("\\.");
-		String main = target;
-		
-		if(splitted.length > 0) {
-			main = splitted[0];
-		}
-		
-		Path patches = sources.resolve(main);
-		Path output = patched.resolve(target);
-		
-		if(Files.exists(patches) && Files.isDirectory(patches)) {
-			Patcher patcher = new HotPatcher(target, core, patches, output);
-			
-			try {
-				patcher.patch();
-				System.out.println("Patcher terminated normally.");
-			} catch (IOException e) {
-				e.printStackTrace();
-				System.err.println("Patcher terminated with failure.");
-			}
-			
-		} else {
-			System.err.println("Nothing to be done.");
+
+	public void handleChange(WatchService service, Path path, Path relative, Kind<Path> kind) throws IOException {		
+		System.out.println("Watchservice (Dynamic Resources) [" + kind + "]: " + relative);
+					
+		if(Files.exists(path)) {
+			List<Path> referencers = new ArrayList<>(linker.getReferencers(path.toRealPath()));
+						
+			linker.invalidateImport(path);
+							
+			for(Path referencer : referencers) {
+				patcher.hotPatch(referencer);
+			}	
 		}
 	}
 }
