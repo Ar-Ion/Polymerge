@@ -25,6 +25,7 @@ package ch.innovazion.polymerge;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -34,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Observable;
 import java.util.Optional;
+import java.util.Set;
 
 import ch.innovazion.polymerge.utils.LineStream;
 import ch.innovazion.polymerge.utils.PatchUtils;
@@ -54,22 +56,27 @@ public class PatchLinker extends Observable {
 	private LineStream link(LineStream stream, Path source, HashSet<Path> alreadyImported) throws IOException {
 		List<String> linkedLines = new ArrayList<>();
 		List<String> imports = readImports(stream);
-		
+				
 		for(String name : imports) {
 			Path path = resolveImportPath(source, name);
-			
-			if(!alreadyImported.contains(path)) {
-				LineStream imported = resolveImport(source, name);
-				LineStream linkedImported = link(imported, path, alreadyImported);
+			try {
+				Path realPath = path.toRealPath();
 				
-				linkedImported.forEach(linkedLines::add);
-				
-				alreadyImported.add(path);
+				if(!alreadyImported.contains(realPath)) {				
+					LineStream imported = resolveImport(source, name);
+					LineStream linkedImported = link(imported, path, alreadyImported);
+					
+					linkedImported.forEach(linkedLines::add);
+					
+					alreadyImported.add(realPath);
+				}
+			} catch(NoSuchFileException e) {
+				System.err.println("[Linker] Failed to resolve import '" + name + "' while linking '" + source + "'");
 			}
 		}
 		
 		stream.forEach(linkedLines::add);
-				
+						
 		return new LineStream(linkedLines);
 	}
 	
@@ -79,9 +86,9 @@ public class PatchLinker extends Observable {
 	private List<String> readImports(LineStream stream) {
 		List<String> imports = new ArrayList<>();
 		
-		PatchUtils.find("@import", stream).ifPresent(include -> {
-			imports.add(include);
-			readImports(stream);
+		PatchUtils.find("@import", stream).ifPresent(identifier -> {
+			imports.add(identifier);
+			imports.addAll(readImports(stream));
 		});
 		
 		return imports;
@@ -90,8 +97,8 @@ public class PatchLinker extends Observable {
 	/*
 	 * If a given patch is a dependency of another patch, the latter has to be notified when the former is modified.
 	 */
-	public List<Path> getReferencers(Path patch) {
-		return Optional.ofNullable(cache.get(patch)).flatMap(LinkerCacheEntry::getReferencers).orElse(Collections.emptyList());
+	public Set<Path> getReferencers(Path patch) {
+		return Optional.ofNullable(cache.get(patch)).flatMap(LinkerCacheEntry::getReferencers).orElse(Collections.emptySet());
 	}
 	
 	public void invalidateImport(Path path) {
@@ -103,15 +110,13 @@ public class PatchLinker extends Observable {
 	 */
 	private LineStream resolveImport(Path source, String name) throws IOException {
 		Path resolved = resolveImportPath(source, name);
-		
+
 		if(Files.exists(resolved)) {
-			LinkerCacheEntry entry = cache.computeIfAbsent(resolved.toRealPath(), LinkerCacheEntry::new);
+			LinkerCacheEntry entry = cache.computeIfAbsent(resolved, LinkerCacheEntry::new);
 			
 			entry.referencers.add(source);
 			
 			return new LineStream(entry.getContent());
-		} else {
-			System.err.println("[Linker] Failed to resolve import '" + name + "' while linking '" + source + "'");
 		}
 		
 		return new LineStream(Collections.emptyList());
@@ -126,9 +131,9 @@ public class PatchLinker extends Observable {
 	private class LinkerCacheEntry {
 		
 		private final List<String> content = new ArrayList<>();
-		private final List<Path> referencers = new ArrayList<>();
+		private final Set<Path> referencers = new HashSet<>();
 				
-		private LinkerCacheEntry(Path path) {			
+		private LinkerCacheEntry(Path path) {				
 			try {
 				this.content.addAll(Files.readAllLines(path));
 			} catch(IOException e) {
@@ -143,8 +148,12 @@ public class PatchLinker extends Observable {
 			return Collections.unmodifiableList(content);
 		}
 		
-		private Optional<List<Path>> getReferencers() {
-			return Optional.of(Collections.unmodifiableList(referencers));
+		private Optional<Set<Path>> getReferencers() {
+			return Optional.of(Collections.unmodifiableSet(referencers));
+		}
+		
+		public String toString() {
+			return referencers.toString();
 		}
 	}
 }

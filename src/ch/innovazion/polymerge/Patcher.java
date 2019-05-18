@@ -85,7 +85,7 @@ public class Patcher {
 	 * Patches all files in a directory.
 	 * Priority for the most nested patches.
 	 */
-	private void patchAll(Path dir) throws IOException {
+	private void patchAll(Path dir) throws IOException {		
 		FileVisitor<Path> visitor = new SimpleFileVisitor<Path>() {
 			public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
 				if(!Files.isHidden(file)) { // Not a symlink directory					
@@ -115,13 +115,13 @@ public class Patcher {
 	protected void patch(Path file) throws IOException {
 		LineStream stream = new LineStream(Files.readAllLines(file));	
 		LineStream linkedStream = linker.link(stream, file);
-		
+				
 		patchStream(file, linkedStream);
 	}
 	
 	private void patchStream(Path file, LineStream stream) throws IOException {
 		LinkedList<Integer> locations = new LinkedList<>();
-		
+				
 		stream.mark();
 		
 		while(PatchUtils.find("@locate", stream).isPresent()) {
@@ -132,7 +132,7 @@ public class Patcher {
 		
 		locations.addLast(stream.length());
 		locations.removeFirst();
-
+		
 		for(int nextLocation : locations) {
 			stream.limit(nextLocation);
 			patchLocation(file, stream);
@@ -146,7 +146,7 @@ public class Patcher {
 		Configuration config = new Configuration(patches.relativize(path).toString());
 		
 		config.read(stream);
-		
+						
 		if(shouldPatch(config)) {
 			SourceTransform transform = null;
 			

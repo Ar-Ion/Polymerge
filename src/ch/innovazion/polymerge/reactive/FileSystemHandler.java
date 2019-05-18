@@ -34,6 +34,7 @@ import java.nio.file.FileVisitOption;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.WatchEvent;
 import java.nio.file.WatchEvent.Kind;
@@ -65,14 +66,18 @@ public abstract class FileSystemHandler {
 				
 				Path relative = null;
 				
-				try {
-					relative = base.relativize(path);
-				} catch(IllegalArgumentException e) {
-					System.err.println("Dynamic resource '" + path + "' out of scope.");
-					System.err.println("You must ensure all the resources you import remain in the same root project directory.");
+				if(!base.equals(path)) {
+					try {
+						relative = base.relativize(path.toRealPath());
+					} catch(IllegalArgumentException | IOException e) {
+						System.err.println("Resource '" + path + "' is out of scope.");
+						System.err.println("You must ensure all the resources you import remain in the same root project directory.");
+					}
+				} else {
+					relative = Paths.get("<root>");
 				}
 				
-				if(shouldHandle(base, relative)) {
+				if(shouldHandle(base, path)) {
 					try {
 						handleChange(service, path, relative, event.kind());
 					} catch(IOException e) {
@@ -106,7 +111,7 @@ public abstract class FileSystemHandler {
 		}
 	}
 	
-	protected boolean shouldHandle(Path base, Path relative) {
+	protected boolean shouldHandle(Path base, Path path) {
 		return true;
 	}
 	

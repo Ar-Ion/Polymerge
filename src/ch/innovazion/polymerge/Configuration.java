@@ -74,4 +74,8 @@ public class Configuration {
 	private Supplier<ConfigurationException> err(String message) {
 		return () -> new ConfigurationException(message + " for " + name);
 	}
+	
+	public String toString() {
+		return "<Configuration>{ location: " + location + "; target: " + target + "; patch mode: " + patchMode + " }";
+	}
 }

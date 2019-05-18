@@ -47,7 +47,7 @@ public class PatchCache {
 	
 	public void patch(String location) throws IOException {
 		List<Path> patches = new ArrayList<>(reverseLocationCache.get(location));
-		
+				
 		if(patches != null) {
 			patches.forEach(patcher);
 		}

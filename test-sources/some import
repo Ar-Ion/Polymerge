@@ -1,8 +1,9 @@
 @locate test
 @mode merge
 
-@patch useless3 --- // Some dependency gives you a hug :-)
+@patch useless3 --- // Some dependency gives you a hugs :-)
 
 @locate sub/test
 @mode append
+
 Hi

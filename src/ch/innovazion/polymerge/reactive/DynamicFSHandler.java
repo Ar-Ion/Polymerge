@@ -46,9 +46,9 @@ public class DynamicFSHandler extends FileSystemHandler {
 
 	public void handleChange(WatchService service, Path path, Path relative, Kind<Path> kind) throws IOException {		
 		System.out.println("Watchservice (Dynamic Resources) [" + kind + "]: " + relative);
-					
+		
 		if(Files.exists(path)) {
-			List<Path> referencers = new ArrayList<>(linker.getReferencers(path.toRealPath()));
+			List<Path> referencers = new ArrayList<>(linker.getReferencers(path));
 						
 			linker.invalidateImport(path);
 							
@@ -56,5 +56,9 @@ public class DynamicFSHandler extends FileSystemHandler {
 				patcher.hotPatch(referencer);
 			}	
 		}
+	}
+	
+	public boolean shouldHandle(Path base, Path path) {
+		return !linker.getReferencers(path).isEmpty();
 	}
 }
