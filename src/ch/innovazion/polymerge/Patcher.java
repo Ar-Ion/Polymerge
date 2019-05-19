@@ -206,4 +206,8 @@ public class Patcher {
 	protected PatchLinker getLinker() {
 		return linker;
 	}
+	
+	protected Manifest getManifest() {
+		return manifest;
+	}
 }

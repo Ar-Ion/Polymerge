@@ -34,14 +34,17 @@ import java.nio.file.FileVisitOption;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.PathMatcher;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.WatchEvent;
 import java.nio.file.WatchEvent.Kind;
-import java.nio.file.attribute.BasicFileAttributes;
-import java.util.EnumSet;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.List;
 
 import com.sun.nio.file.SensitivityWatchEventModifier;
 
@@ -52,6 +55,8 @@ public abstract class FileSystemHandler {
 	private final String name;
 	private final Path base;
 	private final WatchService service;
+	
+	private List<PathMatcher> lowPriority = Collections.emptyList();
 	
 	public FileSystemHandler(String name, Path base) throws IOException {
 		this.name = name;
@@ -73,7 +78,7 @@ public abstract class FileSystemHandler {
 						relative = base.toRealPath().relativize(path.toRealPath());
 					} catch(IllegalArgumentException | IOException e) {
 						System.err.println(getDebugPrependable() + "Resource '" + path + "' is out of scope.");
-						System.err.println(getDebugPrependable() + "You must ensure all the resources you import remain in the same root project directory.");
+						System.err.println(getDebugPrependable() + "You must ensure all the resources you import remain in the same root project directory, ie. " + base.toString());
 					}
 				} else {
 					relative = Paths.get("<root>");
@@ -92,9 +97,17 @@ public abstract class FileSystemHandler {
 		}
 	}
 	
+	public void markAsLowPriority(List<PathMatcher> matchers) {
+		lowPriority = matchers;
+	}
+	
 	public void register(Path path) {
 		try {
-			path.register(service, listenableEvents, SensitivityWatchEventModifier.HIGH);
+			if(lowPriority.stream().anyMatch(m -> m.matches(base.relativize(path)))) {
+				path.register(service, listenableEvents, SensitivityWatchEventModifier.LOW);
+			} else {
+				path.register(service, listenableEvents, SensitivityWatchEventModifier.HIGH);
+			}
 		} catch (IOException e) {
 			System.err.println(getDebugPrependable() + "Unable to register a watch service for '" + path + "'");
 		}

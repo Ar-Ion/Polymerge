@@ -27,7 +27,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.Observable;
 import java.util.Observer;
 
@@ -53,6 +52,9 @@ public class HotPatcher extends Patcher implements Observer {
 			this.coreHandler = new CoreFSHandler(target, core, output, cache);
 			this.patchesHandler = createPatchesFSHandler(patches);
 			this.dynamicHandler = new DynamicFSHandler(target, Paths.get("").toAbsolutePath(), this, getLinker());
+			
+			this.coreHandler.markAsLowPriority(getManifest().getPathMatchers());
+			
 		} catch(IOException e) {
 			System.err.println("[" + target + "] Unable to create a watch service using the default filesystem");
 			System.exit(666);
@@ -101,12 +103,22 @@ public class HotPatcher extends Patcher implements Observer {
 	 * 	- Cache invalidation
 	 * 	- Actual patching of the target
 	 */
-	public void hotPatch(Path path) throws IOException {		
-		cache.invalidate(path).forEach(IOConsumer.of(location -> {			
-			Files.copy(getCore().resolve(location), getOutput().resolve(location), StandardCopyOption.REPLACE_EXISTING);
+	public void hotPatch(Path path) throws IOException {
+		System.out.println("[" + getTargetName() + "] Hot patching '" + path + "'...");
+		
+		cache.invalidate(path).forEach(IOConsumer.of(location -> {
+			Path coreResolved = getCore().resolve(location);
+			Path outputResolved = getOutput().resolve(location);
+			
+			Files.deleteIfExists(outputResolved);
+			
+			if(Files.exists(coreResolved)) {
+				Files.copy(coreResolved, outputResolved);
+			}
+
 			cache.patch(location);
 		}));
-				
+		
 		if(Files.exists(path)) {
 			patch(path);
 		}

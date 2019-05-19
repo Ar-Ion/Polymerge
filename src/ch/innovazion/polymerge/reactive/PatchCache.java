@@ -25,11 +25,9 @@ package ch.innovazion.polymerge.reactive;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -46,10 +44,10 @@ public class PatchCache {
 	}
 	
 	public void patch(String location) throws IOException {
-		List<Path> patches = new ArrayList<>(reverseLocationCache.get(location));
+		Set<Path> patches = reverseLocationCache.get(location);
 				
 		if(patches != null) {
-			patches.forEach(patcher);
+			new HashSet<Path>(patches).forEach(patcher);
 		}
 	}
 	
